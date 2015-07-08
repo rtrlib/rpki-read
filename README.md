@@ -1,2 +1,1 @@
-# lbv
-Live BGP Validator
+# lbv - Live BGP Validator
