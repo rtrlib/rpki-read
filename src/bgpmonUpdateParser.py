@@ -14,6 +14,8 @@ import xml.etree.ElementTree as ET
 from xml.dom import minidom
 from datetime import datetime
 
+from settings import *
+
 verbose = False
 warning = False
 logging = False
@@ -47,13 +49,16 @@ def parse2JSON(xml):
     if src is None:
         print_warn("Invalid XML: %s." % xml)
         return None
-    bgp_message = dict()
+    # find source
     src_addr = src.find('{urn:ietf:params:xml:ns:bgp_monitor}ADDRESS').text
     src_asn = src.find('{urn:ietf:params:xml:ns:bgp_monitor}ASN2').text
+    # init return struct
+    bgp_message = dict()
     bgp_message['type'] = 'announcement'
     bgp_message['asn'] = str(src_asn)
     bgp_message['prefixes'] = list()
     bgp_message['path'] = list()
+
     # check wether it is a keep alive message
     keep_alive = tree.find('{urn:ietf:params:xml:ns:xfb}KEEP_ALIVE')
     if keep_alive is not None:
@@ -98,12 +103,21 @@ def parse2XML(xml):
 
 def main():
     parser = argparse.ArgumentParser(description='', epilog='')
-    parser.add_argument('-l', '--logging',  help='Ouptut log info.', action='store_true')
-    parser.add_argument('-w', '--warning',  help='Output warnings.', action='store_true')
-    parser.add_argument('-v', '--verbose',  help='Verbose output, with debug and logging infos and warnings.', action='store_true')
-    parser.add_argument('-p', '--port',     help='Port of BGPmon Update XML stream, default: 50001', type=int, default=50001)
-    parser.add_argument('-a', '--addr',     help='Address or name of BGPmon host, default: localhost', default='localhost')
-    parser.add_argument('-j', '--json',     help='Set output format to JSON, default: XML.', action='store_true')
+    parser.add_argument('-l', '--logging',
+                        help='Ouptut log info.', action='store_true')
+    parser.add_argument('-w', '--warning',
+                        help='Output warnings.', action='store_true')
+    parser.add_argument('-v', '--verbose',
+                        help='Verbose output.', action='store_true')
+    parser.add_argument('-a', '--addr',
+                        help='Address or name of BGPmon host.',
+                        default=default_bgpmon_server['host'])
+    parser.add_argument('-p', '--port',
+                        help='Port of BGPmon Update XML stream.',
+                        default=default_bgpmon_server['port'], type=int)
+    parser.add_argument('-j', '--json',
+                        help='Set output format to JSON.',
+                        action='store_true')
     args = vars(parser.parse_args())
 
     global verbose
