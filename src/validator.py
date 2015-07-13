@@ -124,7 +124,7 @@ def validator(in_queue, out_queue, cache_host, cache_port):
         return_data['route']['origin_asn'] = "AS"+asn
         return_data['route']['prefix'] = validation_entry[0]
         return_data['validity'] = validity
-        out_queue.put({"validated_route":return_data})
+        out_queue.put({"type":"announcement", "validated_route":return_data})
     # end while
     validator_process.kill()
     return True
@@ -193,15 +193,21 @@ def main():
         try:
             data = json.loads(line)
         except:
-            print_error("Failed to parse JSON from input.")
+            print_warn("Failed to parse JSON from input.")
         else:
             if data['type'] == 'announcement':
                 path = data['path']
-                origin = path.pop()
+                if len(path) < 1:
+                    continue
+                origin = path[-1]
                 prefixes = data['prefixes']
                 for p in prefixes:
                     print_info (p+" : "+origin)
                     input_queue.put( (p, origin) )
+            elif data['type'] == 'withdraw':
+                prefixes = data['prefixes']
+                for p in prefixes:
+                    output_queue.put({"type":"withdraw", "prefix":p})
 
     input_queue.put("STOP")
     output_queue.put("STOP")
