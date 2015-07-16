@@ -10,11 +10,14 @@ import re
 import xml
 import argparse
 import calendar
+
+import multiprocessing as mp
 import xml.etree.ElementTree as ET
+
 from xml.dom import minidom
 from datetime import datetime
 
-from settings import *
+from settings import default_bgpmon_server
 
 verbose = False
 warning = False
@@ -35,7 +38,7 @@ def print_warn(*objs):
 def print_error(*objs):
     print("[ERROR] ", *objs, file=sys.stderr)
 
-def parse2JSON(xml, filter):
+def parse_update(xml, filter):
     try:
         tree = ET.fromstring(xml)
     except:
@@ -47,7 +50,7 @@ def parse2JSON(xml, filter):
     src = tree.find('{urn:ietf:params:xml:ns:bgp_monitor}SOURCE')
     # check if source exists, otherwise return
     if src is None:
-        print_warn("Invalid XML: %s." % xml)
+        print_warn("Invalid XML, no source!")
         return None
     # find source
     src_addr = src.find('{urn:ietf:params:xml:ns:bgp_monitor}ADDRESS').text
@@ -67,6 +70,7 @@ def parse2JSON(xml, filter):
     # proceed with bgp update parsing
     update = tree.find('{urn:ietf:params:xml:ns:xfb}UPDATE')
     if update is None:
+        print_warn("Invalid XML, no update!")
         return None
 
     # check if its a bgp withdraw message
@@ -74,37 +78,28 @@ def parse2JSON(xml, filter):
     for withdraw in withdraws:
         bgp_message['type'] = 'withdraw'
         prefix = withdraw.text
-        print_log ("BGP WITHDRAW %s by AS %s" % (prefix, src_asn))
+        print_log("BGP WITHDRAW %s by AS %s" % (prefix, src_asn))
         bgp_message['prefixes'].append(str(prefix))
-
     if bgp_message['type'] == 'withdraw':
-        #bgp_message['path'].append(str(src_asn))
-        json_str = json.dumps(bgp_message)
-        return json_str
+        return bgp_message
 
     asp = update.find('{urn:ietf:params:xml:ns:xfb}AS_PATH')
     if asp is not None:
         for asn in asp.findall('.//{urn:ietf:params:xml:ns:xfb}ASN2'):
                 bgp_message['path'].append(str(asn.text))
+
     if filter and (len(bgp_message['path']) > 0):
         origin = bgp_message['path'][-1]
         if origin not in filter:
+            print_warn("Filter mismatch, origin AS: " + origin)
             return None
 
     #next_hop = update.find('{urn:ietf:params:xml:ns:xfb}NEXT_HOP').text
     prefixes = update.findall('.//{urn:ietf:params:xml:ns:xfb}NLRI')
     for prefix in prefixes:
         bgp_message['prefixes'].append(str(prefix.text))
-    json_str = json.dumps(bgp_message)
-    return json_str
 
-def parse2XML(xml):
-    try:
-        tree = minidom.parseString(xml)
-    except:
-        print_error("Cannot parse XML: %s", xml)
-        return None
-    return tree.toprettyxml()
+    return bgp_message
 
 def read_filter(fin):
     print_log ("CALL read_filter (%s)." % fin)
@@ -126,6 +121,43 @@ def read_filter(fin):
     # found nothing, so return None
     return None
 
+def recv_bgpmon_updates(host,port,filter, queue):
+    print_log("CALL recv_bgpmon_updates (%s:%d)" % (host,port))
+    # open connection
+    sock =  socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        sock.connect((host,port))
+    except:
+        print_error("Failed to connect to BGPmon!")
+        sys.exit(1)
+
+    data = ""
+    stream = ""
+    # receive data
+    while(True):
+        data = sock.recv(1024)
+        stream += data
+        stream = string.replace(stream, "<xml>", "")
+        while (re.search('</BGP_MONITOR_MESSAGE>', stream)):
+            messages = stream.split('</BGP_MONITOR_MESSAGE>')
+            msg = messages[0] + '</BGP_MONITOR_MESSAGE>'
+            stream = '</BGP_MONITOR_MESSAGE>'.join(messages[1:])
+            result = parse_update(msg, filter)
+            if result:
+                queue.put(result)
+    return True
+
+def output(queue):
+    print_log("CALL output (%s)" % format)
+    while True:
+        odata = queue.get()
+        if (odata == 'STOP'):
+            break
+        json_str = json.dumps(odata)
+        print(json_str, file=sys.stdout)
+        sys.stdout.flush()
+    return True
+
 def main():
     parser = argparse.ArgumentParser(description='', epilog='')
     parser.add_argument('-l', '--logging',
@@ -140,9 +172,6 @@ def main():
     parser.add_argument('-p', '--port',
                         help='Port of BGPmon Update XML stream.',
                         default=default_bgpmon_server['port'], type=int)
-    parser.add_argument('-x', '--xml',
-                        help='Set output format to XML, default JSON.',
-                        action='store_true')
     fgroup = parser.add_mutually_exclusive_group(required=False)
     fgroup.add_argument('-f', '--filter',
                         help="ASN filter, as comma separated list.",
@@ -164,40 +193,24 @@ def main():
 
     port = args['port']
     addr = args['addr'].strip()
-    format_xml = args['xml']
     filter = None
     if args['filter']:
         filter = args['filter'].split(',')
     if args['readfilter']:
         filter = read_filter(args['readfilter'])
 
-    print_log(datetime.now().strftime('%Y-%m-%d %H:%M:%S') +
-              " connecting to BGPmon Update XML stream (%s:%d)" % (addr,port))
-
-    sock =  socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    output_queue = mp.Queue()
+    ot = mp.Process(target=output,
+                    args=(output_queue,))
     try:
-        sock.connect((addr,port))
-    except:
-        print_error("Failed to connect to BGPmon!")
-        sys.exit(1)
+        ot.start()
+        recv_bgpmon_updates(addr,port,filter,output_queue)
+    except KeyboardInterrupt:
+        print_warn("ABORT")
+    finally:
+        output_queue.put("STOP")
 
-    data = ""
-    stream = ""
-    while(True):
-        data = sock.recv(1024)
-        stream += data
-        stream = string.replace(stream, "<xml>", "")
-        while (re.search('</BGP_MONITOR_MESSAGE>', stream)):
-            messages = stream.split('</BGP_MONITOR_MESSAGE>')
-            msg = messages[0] + '</BGP_MONITOR_MESSAGE>'
-            stream = '</BGP_MONITOR_MESSAGE>'.join(messages[1:])
-            if format_xml:
-                output = parse2XML(msg)
-            else:
-                output = parse2JSON(msg, filter)
-            if output:
-                print(output.strip(), file=sys.stdout)
-                sys.stdout.flush()
+    ot.join()
 
     print_log(datetime.now().strftime('%Y-%m-%d %H:%M:%S') +  " done ...")
     # END
