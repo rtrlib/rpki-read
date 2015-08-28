@@ -195,19 +195,18 @@ def main():
         except:
             print_warn("Failed to parse JSON from input.")
         else:
-            if data['type'] == 'announcement':
-                path = data['path']
+            if data['type'] == 'update':
+                withdraws = data['withdraw']
+                for w in withdraws:
+                    output_queue.put({"type":"withdraw", "prefix":w})
+                path = data['aspath']
                 if len(path) < 1:
                     continue
                 origin = path[-1]
-                prefixes = data['prefixes']
+                prefixes = data['announce']
                 for p in prefixes:
                     print_info (p+" : "+origin)
                     input_queue.put( (p, origin) )
-            elif data['type'] == 'withdraw':
-                prefixes = data['prefixes']
-                for p in prefixes:
-                    output_queue.put({"type":"withdraw", "prefix":p})
 
     input_queue.put("STOP")
     output_queue.put("STOP")

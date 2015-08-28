@@ -1,0 +1,60 @@
+<BGP_MONITOR_MESSAGE xmlns:bgp="urn:ietf:params:xml:ns:xfb" xmlns:ne="urn:ietf:params:xml:ns:network_elements" xmlns:xsi="http://www.w3.org/2001/XMLSchema" xmlns="urn:ietf:params:xml:ns:bgp_monitor">
+    <SOURCE>
+        <ADDRESS afi="1">212.45.111.154</ADDRESS>
+        <PORT>179</PORT>
+        <ASN2>51224</ASN2>
+    </SOURCE>
+    <DEST>
+        <ADDRESS afi="1">141.22.28.222</ADDRESS>
+        <PORT>50004</PORT>
+        <ASN2>51224</ASN2>
+    </DEST>
+    <MONITOR>
+        <ADDRESS afi="0">ipv4any</ADDRESS>
+        <PORT>0</PORT>
+        <ASN4>0</ASN4>
+    </MONITOR>
+    <OBSERVED_TIME precision="false">
+        <TIMESTAMP>1440745329</TIMESTAMP>
+        <DATETIME>2015-08-28T07:02:09Z</DATETIME>
+    </OBSERVED_TIME>
+    <SEQUENCE_NUMBER>932976415</SEQUENCE_NUMBER>
+    <COLLECTION>LIVE</COLLECTION>
+    <bgp:UPDATE bgp_message_type="2">
+        <bgp:WITHDRAW afi="1">186.65.98.0/24</bgp:WITHDRAW>
+        <bgp:WITHDRAW afi="1">186.65.99.0/24</bgp:WITHDRAW>
+        <bgp:WITHDRAW afi="1">186.65.97.0/24</bgp:WITHDRAW>
+        <bgp:WITHDRAW afi="1">186.65.96.0/24</bgp:WITHDRAW>
+        <bgp:ORIGIN attribute_type="1" extended="false" optional="false" partial="false" transitive="true">IGP</bgp:ORIGIN>
+        <bgp:AS_PATH attribute_type="2" extended="false" optional="false" partial="false" transitive="true">
+            <bgp:AS_SEQUENCE>
+                <bgp:ASN2>1299</bgp:ASN2>
+                <bgp:ASN2>12956</bgp:ASN2>
+                <bgp:ASN2>22927</bgp:ASN2>
+                <bgp:ASN2>52383</bgp:ASN2>
+            </bgp:AS_SEQUENCE>
+        </bgp:AS_PATH>
+        <bgp:NEXT_HOP afi="1" attribute_type="3" extended="false" optional="false" partial="false" transitive="true">213.248.84.169</bgp:NEXT_HOP>
+        <bgp:LOCAL_PREF attribute_type="5" extended="false" optional="false" partial="false" transitive="true">1677721600</bgp:LOCAL_PREF>
+        <bgp:COMMUNITY attribute_type="8" extended="false" optional="true" partial="false" transitive="true">
+            <bgp:ASN2>1299</bgp:ASN2>
+            <bgp:VALUE>20000</bgp:VALUE>
+        </bgp:COMMUNITY>
+        <bgp:NLRI afi="1">186.65.96.0/21</bgp:NLRI>
+    </bgp:UPDATE>
+    <OCTET_MESSAGE>FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF005102001018BA416218BA416318BA416118BA416000264001010040020A02040513329C598FCC9F400304D5F854A940050400000064C0080405134E2015BA4160</OCTET_MESSAGE>
+    <METADATA>
+        <NODE_PATH>//bgp:UPDATE["186.65.98.0/24"]/bgp:WITHDRAW</NODE_PATH>
+        <ANNOTATION>WITH</ANNOTATION>
+        <NODE_PATH>//bgp:UPDATE["186.65.99.0/24"]/bgp:WITHDRAW</NODE_PATH>
+        <ANNOTATION>WITH</ANNOTATION>
+        <NODE_PATH>//bgp:UPDATE["186.65.97.0/24"]/bgp:WITHDRAW</NODE_PATH>
+        <ANNOTATION>WITH</ANNOTATION>
+        <NODE_PATH>//bgp:UPDATE["186.65.96.0/24"]/bgp:WITHDRAW</NODE_PATH>
+        <ANNOTATION>WITH</ANNOTATION>
+        <NODE_PATH>//bgp:UPDATE/bgp:MP_REACH[MP_NLRI="186.65.96.0/21"]/MP_NLRI</NODE_PATH>
+        <ANNOTATION>DPATH</ANNOTATION>
+        <DESTINATION_GEOLOCATION>UNKNOWN LOCATION</DESTINATION_GEOLOCATION>
+        <SOURCE_GEOLOCATION>UNKNOWN LOCATION</SOURCE_GEOLOCATION>
+    </METADATA>
+</BGP_MONITOR_MESSAGE>
