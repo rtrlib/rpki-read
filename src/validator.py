@@ -10,7 +10,6 @@ import re
 import socket
 import string
 import sys
-import xml
 
 import multiprocessing as mp
 from datetime import datetime
