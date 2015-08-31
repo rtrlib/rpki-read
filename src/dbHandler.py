@@ -6,6 +6,7 @@ import argparse
 import calendar
 import json
 import os
+import psycopg2
 import re
 import socket
 import string
@@ -44,12 +45,9 @@ def main():
                         help='Output warnings.', action='store_true')
     parser.add_argument('-v', '--verbose',
                         help='Verbose output.', action='store_true')
-    parser.add_argument('-a', '--addr',
-                        help='Address or name of RPKI cache server.',
-                        default=default_cache_server['host'])
-    parser.add_argument('-p', '--port',
-                        help='Port of RPKI cache server.',
-                        default=default_cache_server['port'], type=int)
+    parser.add_argument('-d', '--database',
+                        help='Postgres database connection parameters.'
+                        default='dbname=lbv', type=str, required=True)
 
     args = vars(parser.parse_args())
 
@@ -60,8 +58,7 @@ def main():
     global logging
     logging = args['logging']
 
-    addr = args['addr'].strip()
-    port = args['port']
+    dbconnstr = args['database'].strip()
 
     # BEGIN
     print_log(datetime.now().strftime('%Y-%m-%d %H:%M:%S') + " starting ...")

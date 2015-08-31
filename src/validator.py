@@ -123,7 +123,11 @@ def validator(in_queue, out_queue, cache_host, cache_port):
         return_data['route']['origin_asn'] = "AS"+asn
         return_data['route']['prefix'] = validation_entry[0]
         return_data['validity'] = validity
-        out_queue.put({"type":"announcement", "validated_route":return_data})
+        out_queue.put({ "type":"announcement",
+                        validation_entry[2], # source
+                        validation_entry[3], # timestamp
+                        validation_entry[4], # next_hop
+                        "validated_route":return_data} )
     # end while
     validator_process.kill()
     return True
@@ -197,7 +201,11 @@ def main():
             if data['type'] == 'update':
                 withdraws = data['withdraw']
                 for w in withdraws:
-                    output_queue.put({"type":"withdraw", "prefix":w})
+                    output_queue.put({  "type":"withdraw",
+                                        "prefix":w,
+                                        "source":data['source'],
+                                        "timestamp":data['timestamp'],
+                                        "next_hop":data['next_hop']})
                 path = data['aspath']
                 if len(path) < 1:
                     continue
@@ -205,7 +213,10 @@ def main():
                 prefixes = data['announce']
                 for p in prefixes:
                     print_info (p+" : "+origin)
-                    input_queue.put( (p, origin) )
+                    input_queue.put( (  p, origin,
+                                        data['source'],
+                                        data['timestamp'],
+                                        data['next_hop']) )
 
     input_queue.put("STOP")
     output_queue.put("STOP")
