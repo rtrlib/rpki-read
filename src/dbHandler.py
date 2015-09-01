@@ -47,45 +47,65 @@ def outputPostgres(dbconnstr, queue):
         print_error("connecting to database")
         sys.exit(1)
     cur = con.cursor()
-    update_validity =   "UPDATE t_validity SET state=%s, ts=%s, " \
-                        "roa_prefix=%s, roa_maxlen=%s, roa_asn=%s, " \
-                        "next_hop=%s, src_asn=%s, src_addr=%s " \
-                        "WHERE prefix=%s AND origin=%s"
+    update_validity =   "UPDATE t_validity SET state='%s', ts='%s', " \
+                        "roa_prefix='%s', roa_maxlen=%s, roa_asn=%s, " \
+                        "next_hop='%s', src_asn=%s, src_addr='%s' " \
+                        "WHERE prefix='%s'"
     insert_validity =   "INSERT INTO t_validity (prefix, origin, state, ts, roa_prefix, roa_maxlen, roa_asn, next_hop, src_asn, src_addr) " \
-                        "SELECT %s, %s, %s, %s, %s, %s, %s, %s, %s, %s " \
-                        "WHERE NOT EXISTS (SELECT 1 FROM t_validity WHERE prefix=%s AND origin=%s)"
+                        "SELECT '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' " \
+                        "WHERE NOT EXISTS (SELECT 1 FROM t_validity WHERE prefix='%s')"
     while True:
         data = queue.get()
         if (data == 'DONE'):
             break
         try:
             if data['type'] == 'announcement':
-                try:
-                    ts_str = datetime.fromtimestamp(
+                vr = data['validated_route']
+                rt = vr['route']
+                vl = vr['validity']
+                vp = vl['VRPs']
+                src = data['source']
+                roa = {'prefix':'0.0.0.0', 'maxlen':0, 'asn':0}
+                if vl['code'] == 0:
+                    roa = vp['matched']
+                elif vl['code'] == 3:
+                    roa = vp['unmatched_as']
+                elif vl['code'] == 4:
+                    roa = vp['unmatched_length']
+
+                ts_str = datetime.fromtimestamp(
                         int(data['timestamp'])).strftime('%Y-%m-%d %H:%M:%S')
-                    print_info("converted unix timestamp: " + ts_str)
-                    cur.execute(update_validity, [data['state'], ts_str,
-                        data['roa_prefix'], data['roa_maxlen'], data['roa_asn'],
-                        data['next_hop'], data['src_asn'], data['src_addr'],
-                        data['prefix'], data['origin']])
-                    cur.execute(insert_validity, [data['prefix'],
-                        data['origin'], data['state'], ts_str,
-                        data['roa_prefix'], data['roa_maxlen'], data['roa_asn'],
-                        data['next_hop'], data['src_asn'], data['src_addr'],
-                        data['prefix'], data['origin']])
+                print_info("converted unix timestamp: " + ts_str)
+                update_str = update_validity % (vl['state'], ts_str,
+                    roa['prefix'], roa['maxlen'], roa['asn'],
+                    data['next_hop'], src['asn'], src['addr'],
+                    rt['prefix'])
+                print_info("UPDATE: " + update_str)
+                insert_str = insert_validity % (rt['prefix'],
+                    rt['origin_asn'][2:], vl['state'], ts_str,
+                    roa['prefix'], roa['maxlen'], roa['asn'],
+                    data['next_hop'], src['asn'], src['addr'],
+                    rt['prefix'])
+                print_info("INSERT: " + insert_str)
+                try:
+                    cur.execute(update_str)
+                    cur.execute(insert_str)
                     con.commit()
                 except Exception, e:
                     print_error("updating or inserting entry, announcement")
                     print_error("... failed with: %s" % (e.message))
                     con.rollback()
             elif (data['type'] == 'withdraw') and (keepwithdrawn):
+                ts_str = datetime.fromtimestamp(
+                    int(data['timestamp'])).strftime('%Y-%m-%d %H:%M:%S')
+                print_info("converted unix timestamp: " + ts_str)
+                src = data['source']
+                update_str = update_validity % ('withdrawn', ts_str, None,
+                    None, None, None, src['asn'], src['addr'],
+                    data['prefix'])
+                print_info("UPDATE: " + update_str)
                 try:
-                    ts_str = datetime.fromtimestamp(
-                        int(data['timestamp'])).strftime('%Y-%m-%d %H:%M:%S')
-                    print_info("converted unix timestamp: " + ts_str)
-                    cur.execute(update_validity, ['withdrawn', ts_str, None,
-                        None, None, None, data['src_asn'], data['src_addr'],
-                        data['prefix'], data['origin']])
+                    cur.execute(update_str)
                     con.commit()
                 except Exception, e:
                     print_error("updating entry, withdraw")
