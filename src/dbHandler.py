@@ -63,6 +63,7 @@ def outputPostgres(dbconnstr, queue):
                 try:
                     ts_str = datetime.fromtimestamp(
                         data['timestamp']).strftime('%Y-%m-%d %H:%M:%S')
+                    print_info("converted unix timestamp: " + ts_str)
                     cur.execute(update_validity, [data['state'], ts_str,
                         data['roa_prefix'], data['roa_maxlen'], data['roa_asn'],
                         data['next_hop'], data['src_asn'], data['src_addr'],
@@ -73,19 +74,22 @@ def outputPostgres(dbconnstr, queue):
                         data['next_hop'], data['src_asn'], data['src_addr'],
                         data['prefix'], data['origin']])
                     con.commit()
-                except:
+                except Exception, e:
                     print_error("updating or inserting entry, announcement")
+                    print_error("... failed with: %s" % (e.message))
                     con.rollback()
             elif (data['type'] == 'withdraw') and (keepwithdrawn):
                 try:
                     ts_str = datetime.fromtimestamp(
                         data['timestamp']).strftime('%Y-%m-%d %H:%M:%S')
+                    print_info("converted unix timestamp: " + ts_str)
                     cur.execute(update_validity, ['withdrawn', ts_str, None,
                         None, None, None, data['src_asn'], data['src_addr'],
                         data['prefix'], data['origin']])
                     con.commit()
-                except:
+                except Exception, e:
                     print_error("updating entry, withdraw")
+                    print_error("... failed with: %s" % (e.message))
                     con.rollback()
             else:
                 continue
