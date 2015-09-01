@@ -54,6 +54,7 @@ def outputPostgres(dbconnstr, queue):
     insert_validity =   "INSERT INTO t_validity (prefix, origin, state, ts, roa_prefix, roa_maxlen, roa_asn, next_hop, src_asn, src_addr) " \
                         "SELECT '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' " \
                         "WHERE NOT EXISTS (SELECT 1 FROM t_validity WHERE prefix='%s')"
+    delete_validty =    "DELETE FROM t_validity WHERE prefix='%s'"
     while True:
         data = queue.get()
         if (data == 'DONE'):
@@ -95,27 +96,35 @@ def outputPostgres(dbconnstr, queue):
                     print_error("updating or inserting entry, announcement")
                     print_error("... failed with: %s" % (e.message))
                     con.rollback()
-            elif (data['type'] == 'withdraw') and (keepwithdrawn):
-                ts_str = datetime.fromtimestamp(
-                    int(data['timestamp'])).strftime('%Y-%m-%d %H:%M:%S')
-                print_info("converted unix timestamp: " + ts_str)
-                src = data['source']
-                update_str = update_validity % ('withdrawn', ts_str, None,
-                    None, None, None, src['asn'], src['addr'],
+            elif (data['type'] == 'withdraw'):
+                if keepwithdrawn:
+                    ts_str = datetime.fromtimestamp(
+                        int(data['timestamp'])).strftime('%Y-%m-%d %H:%M:%S')
+                    print_info("converted unix timestamp: " + ts_str)
+                    src = data['source']
+                    update_str = update_validity % ('withdrawn', ts_str, None,
+                        None, None, None, src['asn'], src['addr'],
                     data['prefix'])
-                print_info("UPDATE: " + update_str)
-                try:
-                    cur.execute(update_str)
-                    con.commit()
-                except Exception, e:
-                    print_error("updating entry, withdraw")
-                    print_error("... failed with: %s" % (e.message))
-                    con.rollback()
+                    print_info("UPDATE: " + update_str)
+                    try:
+                        cur.execute(update_str)
+                        con.commit()
+                    except Exception, e:
+                        print_error("updating entry, withdraw")
+                        print_error("... failed with: %s" % (e.message))
+                        con.rollback()
+                else:
+                    try:
+                        cur.execute(delete_validty, [data['prefix']])
+                        con.commit()
+                    except Exception, e:
+                        print_error("deleting entry, withdraw")
+                        print_error("... failed with: %s" % (e.message))
+                        con.rollback()
             else:
                 continue
         except Exception, e:
-            print_error("%s failed with: %s" %
-                        (mp.current_process().name, e.message))
+            print_error("outputPostgres failed with: %s" % (e.message))
     return True
 
 def main():
