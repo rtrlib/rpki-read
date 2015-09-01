@@ -37,6 +37,62 @@ def print_warn(*objs):
 def print_error(*objs):
     print("[ERROR] ", *objs, file=sys.stderr)
 
+def outputPostgres(dbconnstr, queue):
+    print_info(dbconnstr)
+    try:
+        con = psycopg2.connect(dbconnstr)
+    except Exception, e:
+        print_error("failed with: %s" % (e.message))
+        print_error("connecting to database")
+        sys.exit(1)
+    cur = con.cursor()
+    update_validity =   "UPDATE t_validity SET state=%s, ts=%s, " \
+                        "roa_prefix=%s, roa_maxlen=%s, roa_asn=%s, " \
+                        "next_hop=%s, src_asn=%s, src_addr=%s " \
+                        "WHERE prefix=%s AND origin=%s"
+    insert_validity =   "INSERT INTO t_validity (prefix, origin, state, ts, roa_prefix, roa_maxlen, roa_asn, next_hop, src_asn, src_addr) " \
+                        "SELECT %s, %s, %s, %s, %s, %s, %s, %s, %s, %s " \
+                        "WHERE NOT EXISTS (SELECT 1 FROM t_validity WHERE prefix=%s AND origin=%s)"
+    while True:
+        data = queue.get()
+        if (data == 'DONE'):
+            break
+        try:
+            if data['type'] == 'announcement':
+                try:
+                    ts_str = datetime.fromtimestamp(
+                        data['timestamp']).strftime('%Y-%m-%d %H:%M:%S')
+                    cur.execute(update_validity, [data['state'], ts_str,
+                        data['roa_prefix'], data['roa_maxlen'], data['roa_asn'],
+                        data['next_hop'], data['src_asn'], data['src_addr'],
+                        data['prefix'], data['origin']])
+                    cur.execute(insert_validity, [data['prefix'],
+                        data['origin'], data['state'], ts_str,
+                        data['roa_prefix'], data['roa_maxlen'], data['roa_asn'],
+                        data['next_hop'], data['src_asn'], data['src_addr'],
+                        data['prefix'], data['origin']])
+                    con.commit()
+                except:
+                    print_error("updating or inserting entry, announcement")
+                    con.rollback()
+            elif (data['type'] == 'withdraw') and (keepwithdrawn):
+                try:
+                    ts_str = datetime.fromtimestamp(
+                        data['timestamp']).strftime('%Y-%m-%d %H:%M:%S')
+                    cur.execute(update_validity, ['withdrawn', ts_str, None,
+                        None, None, None, data['src_asn'], data['src_addr'],
+                        data['prefix'], data['origin']])
+                    con.commit()
+                except:
+                    print_error("updating entry, withdraw")
+                    con.rollback()
+            else:
+                continue
+        except Exception, e:
+            print_error("%s failed with: %s" %
+                        (mp.current_process().name, e.message))
+    return True
+
 def main():
     parser = argparse.ArgumentParser(description='', epilog='')
     parser.add_argument('-l', '--logging',
@@ -45,8 +101,10 @@ def main():
                         help='Output warnings.', action='store_true')
     parser.add_argument('-v', '--verbose',
                         help='Verbose output.', action='store_true')
+    parser.add_argument('-k', '--keepwithdrawn',
+                        help='Keep withdrawn prefixes.', action='store_true')
     parser.add_argument('-d', '--database',
-                        help='Postgres database connection parameters.'
+                        help='Postgres database connection parameters.',
                         default='dbname=lbv', type=str, required=True)
 
     args = vars(parser.parse_args())
@@ -59,10 +117,23 @@ def main():
     logging = args['logging']
 
     dbconnstr = args['database'].strip()
-
+    keepwithdrawn = args['keepwithdrawn']
     # BEGIN
     print_log(datetime.now().strftime('%Y-%m-%d %H:%M:%S') + " starting ...")
-
+    queue = mp.Queue()
+    output_p = mp.Process(target=outputPostgres,
+                           args=(dbconnstr,queue))
+    output_p.start()
+    # main loop
+    while True:
+        line = sys.stdin.readline().strip()
+        try:
+            data = json.loads(line)
+        except:
+            print_warn("Failed to parse JSON from input.")
+        else:
+            queue.put(data)
+            print_info("output queue size: " + queue.qsize())
 
 if __name__ == "__main__":
     main()
