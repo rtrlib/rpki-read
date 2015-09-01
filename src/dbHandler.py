@@ -21,6 +21,7 @@ from settings import *
 verbose = False
 warning = False
 logging = False
+keepwithdrawn = False
 
 def print_log(*objs):
     if logging or verbose:
@@ -117,6 +118,7 @@ def main():
     logging = args['logging']
 
     dbconnstr = args['database'].strip()
+    global keepwithdrawn
     keepwithdrawn = args['keepwithdrawn']
     # BEGIN
     print_log(datetime.now().strftime('%Y-%m-%d %H:%M:%S') + " starting ...")
@@ -133,7 +135,7 @@ def main():
             print_warn("Failed to parse JSON from input.")
         else:
             queue.put(data)
-            print_info("output queue size: " + queue.qsize())
+            print_info("output queue size: " + str(queue.qsize()))
 
 if __name__ == "__main__":
     main()
