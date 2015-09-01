@@ -15,6 +15,7 @@ import sys
 import multiprocessing as mp
 from datetime import datetime
 from subprocess import PIPE, Popen
+from psycopg2.extras import Json
 
 from settings import *
 
@@ -47,14 +48,21 @@ def outputPostgres(dbconnstr, queue):
         print_error("connecting to database")
         sys.exit(1)
     cur = con.cursor()
-    update_validity =   "UPDATE t_validity SET state='%s', ts='%s', " \
-                        "roa_prefix='%s', roa_maxlen=%s, roa_asn=%s, " \
-                        "next_hop='%s', src_asn=%s, src_addr='%s' " \
-                        "WHERE prefix='%s'"
-    insert_validity =   "INSERT INTO t_validity (prefix, origin, state, ts, roa_prefix, roa_maxlen, roa_asn, next_hop, src_asn, src_addr) " \
-                        "SELECT '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' " \
-                        "WHERE NOT EXISTS (SELECT 1 FROM t_validity WHERE prefix='%s')"
-    delete_validty =    "DELETE FROM t_validity WHERE prefix='%s'"
+    update_validity =   "UPDATE t_validity SET state=%s, ts=%s, roas=%s, " \
+                        "next_hop=%s,src_asn=%s, src_addr=%s WHERE prefix=%s"
+    insert_validity =   "INSERT INTO t_validity (prefix, origin, state, ts, roas, next_hop, src_asn, src_addr) " \
+                        "SELECT %s, %s, %s, %s, %s, %s, %s, %s " \
+                        "WHERE NOT EXISTS (SELECT 1 FROM t_validity WHERE prefix=%s)"
+    delete_validty =    "DELETE FROM t_validity WHERE prefix=%s"
+    delete_all =        "DELETE FROM t_validity *"
+    try:
+        cur.execute(delete_all)
+        con.commit()
+    except Exception, e:
+        print_error("deleting all existing entries")
+        print_error("... failed with: %s" % (e.message))
+        con.rollback()
+
     while True:
         data = queue.get()
         if (data == 'DONE'):
@@ -64,33 +72,18 @@ def outputPostgres(dbconnstr, queue):
                 vr = data['validated_route']
                 rt = vr['route']
                 vl = vr['validity']
-                vp = vl['VRPs']
+                roas = vl['VRPs']
                 src = data['source']
-                roa = {'prefix':'0.0.0.0', 'maxlen':0, 'asn':0}
-                if vl['code'] == 0:
-                    roa = vp['matched']
-                elif vl['code'] == 3:
-                    roa = vp['unmatched_as']
-                elif vl['code'] == 4:
-                    roa = vp['unmatched_length']
 
                 ts_str = datetime.fromtimestamp(
                         int(data['timestamp'])).strftime('%Y-%m-%d %H:%M:%S')
-                print_info("converted unix timestamp: " + ts_str)
-                update_str = update_validity % (vl['state'], ts_str,
-                    roa['prefix'], roa['maxlen'], roa['asn'],
-                    data['next_hop'], src['asn'], src['addr'],
-                    rt['prefix'])
-                print_info("UPDATE: " + update_str)
-                insert_str = insert_validity % (rt['prefix'],
-                    rt['origin_asn'][2:], vl['state'], ts_str,
-                    roa['prefix'], roa['maxlen'], roa['asn'],
-                    data['next_hop'], src['asn'], src['addr'],
-                    rt['prefix'])
-                print_info("INSERT: " + insert_str)
+                #print_info("converted unix timestamp: " + ts_str)
                 try:
-                    cur.execute(update_str)
-                    cur.execute(insert_str)
+                    cur.execute(update_validity, [ vl['state'], ts_str, Json(roas),
+                        data['next_hop'], src['asn'], src['addr'], rt['prefix'] ])
+                    cur.execute(insert_validity, [rt['prefix'], rt['origin_asn'][2:],
+                        vl['state'], ts_str, Json(roas),
+                        data['next_hop'], src['asn'], src['addr'], rt['prefix']])
                     con.commit()
                 except Exception, e:
                     print_error("updating or inserting entry, announcement")
@@ -100,14 +93,11 @@ def outputPostgres(dbconnstr, queue):
                 if keepwithdrawn:
                     ts_str = datetime.fromtimestamp(
                         int(data['timestamp'])).strftime('%Y-%m-%d %H:%M:%S')
-                    print_info("converted unix timestamp: " + ts_str)
+                    #print_info("converted unix timestamp: " + ts_str)
                     src = data['source']
-                    update_str = update_validity % ('withdrawn', ts_str, None,
-                        None, None, None, src['asn'], src['addr'],
-                    data['prefix'])
-                    print_info("UPDATE: " + update_str)
                     try:
-                        cur.execute(update_str)
+                        cur.execute(update_validity, ['withdrawn', ts_str, None,
+                            None, src['asn'], src['addr'], data['prefix']] )
                         con.commit()
                     except Exception, e:
                         print_error("updating entry, withdraw")
@@ -125,6 +115,14 @@ def outputPostgres(dbconnstr, queue):
                 continue
         except Exception, e:
             print_error("outputPostgres failed with: %s" % (e.message))
+            if (con.closed):
+                try:
+                    con = psycopg2.connect(dbconnstr)
+                except Exception, e:
+                    print_error("failed with: %s" % (e.message))
+                    print_error("connecting to database")
+                    sys.exit(1)
+                cur = con.cursor()
     return True
 
 def main():
@@ -137,9 +135,16 @@ def main():
                         help='Verbose output.', action='store_true')
     parser.add_argument('-k', '--keepwithdrawn',
                         help='Keep withdrawn prefixes.', action='store_true')
-    parser.add_argument('-d', '--database',
-                        help='Postgres database connection parameters.',
-                        default='dbname=lbv', type=str, required=True)
+    db = parser.add_mutually_exclusive_group(required=True)
+    db.add_argument(    '-c', '--couchdb',
+                        help='CouchDB connection parameters.',
+                        default=False)
+    db.add_argument(    '-m', '--mongodb',
+                        help='MongoDB connection parameters.',
+                        default=False)
+    db.add_argument(    '-p', '--postgres',
+                        help='PostgreSQL connection parameters.',
+                        default=False)
 
     args = vars(parser.parse_args())
 
@@ -149,15 +154,23 @@ def main():
     warning   = args['warning']
     global logging
     logging = args['logging']
-
-    dbconnstr = args['database'].strip()
     global keepwithdrawn
     keepwithdrawn = args['keepwithdrawn']
+
+    queue = mp.Queue()
     # BEGIN
     print_log(datetime.now().strftime('%Y-%m-%d %H:%M:%S') + " starting ...")
-    queue = mp.Queue()
-    output_p = mp.Process(target=outputPostgres,
-                           args=(dbconnstr,queue))
+    if args['couchdb']:
+        print_error("Support for CouchDB not implemented yet!")
+        sys.exit(1)
+    if args['mongodb']:
+        print_error("Support for MongoDB not implemented yet!")
+        sys.exit(1)
+    if args['postgres']:
+        dbconnstr = args['postgres'].strip()
+        output_p = mp.Process(  target=outputPostgres,
+                                args=(dbconnstr,queue))
+
     output_p.start()
     # main loop
     while True:
@@ -169,6 +182,10 @@ def main():
         else:
             queue.put(data)
             print_info("output queue size: " + str(queue.qsize()))
+            if (queue.qsize() > 100000):
+                print_warn("output queue size exceeds threshold, restart output thread!")
+                output_p.terminate()
+                output_p.start()
 
 if __name__ == "__main__":
     main()
