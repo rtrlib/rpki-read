@@ -62,7 +62,7 @@ def outputPostgres(dbconnstr, queue):
             if data['type'] == 'announcement':
                 try:
                     ts_str = datetime.fromtimestamp(
-                        data['timestamp']).strftime('%Y-%m-%d %H:%M:%S')
+                        int(data['timestamp'])).strftime('%Y-%m-%d %H:%M:%S')
                     print_info("converted unix timestamp: " + ts_str)
                     cur.execute(update_validity, [data['state'], ts_str,
                         data['roa_prefix'], data['roa_maxlen'], data['roa_asn'],
@@ -81,7 +81,7 @@ def outputPostgres(dbconnstr, queue):
             elif (data['type'] == 'withdraw') and (keepwithdrawn):
                 try:
                     ts_str = datetime.fromtimestamp(
-                        data['timestamp']).strftime('%Y-%m-%d %H:%M:%S')
+                        int(data['timestamp'])).strftime('%Y-%m-%d %H:%M:%S')
                     print_info("converted unix timestamp: " + ts_str)
                     cur.execute(update_validity, ['withdrawn', ts_str, None,
                         None, None, None, data['src_asn'], data['src_addr'],
