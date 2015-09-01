@@ -124,10 +124,11 @@ def validator(in_queue, out_queue, cache_host, cache_port):
         return_data['route']['prefix'] = validation_entry[0]
         return_data['validity'] = validity
         out_queue.put({ "type":"announcement",
-                        validation_entry[2], # source
-                        validation_entry[3], # timestamp
-                        validation_entry[4], # next_hop
-                        "validated_route":return_data} )
+                        "source":validation_entry[2], # source
+                        "timestamp":validation_entry[3], # timestamp
+                        "next_hop":validation_entry[4], # next_hop
+                        "validated_route":return_data
+                        })
     # end while
     validator_process.kill()
     return True
@@ -204,8 +205,8 @@ def main():
                     output_queue.put({  "type":"withdraw",
                                         "prefix":w,
                                         "source":data['source'],
-                                        "timestamp":data['timestamp'],
-                                        "next_hop":data['next_hop']})
+                                        "timestamp":data['timestamp']
+                                      })
                 path = data['aspath']
                 if len(path) < 1:
                     continue
