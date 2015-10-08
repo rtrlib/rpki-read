@@ -35,10 +35,16 @@
       }
     </script>
     <div id="numbers" style="width: 900px; height: 50px;display: flex; justify-content: space-between;">
-        <span style="font-weight:bold; margin-right: 10px; margin-left: 10px;"> Latest Timestamp: <span style="color:blue;font-weight:bold"> {{ stats.latest_ts }} </span></span>
-        <span style="font-weight:bold; margin-right: 10px; margin-left: 10px;"> # RIB entries: <span style="color:blue;font-weight:bold"> {{ stats.sum_all }} </span></span>
-        <span style="font-weight:bold; margin-right: 10px; margin-left: 10px;"> with RPKI: <span style="color:blue;font-weight:bold"> {{ stats.sum_val }} </span></span>
+        <span style="font-weight:bold; margin-right: 10px; margin-left: 10px;"> Latest Timestamp: <span class="badge badge-info"> {{ stats.latest_ts }} </span></span>
+        <span style="font-weight:bold; margin-right: 10px; margin-left: 10px;"> # RIB entries: <span class="badge badge-info"> {{ stats.sum_all }} </span></span>
+        <span style="font-weight:bold; margin-right: 10px; margin-left: 10px;"> with RPKI: <span class="badge badge-info"> {{ stats.sum_val }} </span></span>
     </div>
-    <div id="piechart_all" style="width: 900px; height: 400px;"></div>
-    <div id="piechart_val" style="width: 900px; height: 400px;"></div>
+    <ul class="thumbnails">
+        <li class="span4">
+            <div id="piechart_all" style="width: 500px; height: 400px;"></div>
+        </li>
+        <li class="span4">
+            <div id="piechart_val" style="width: 500px; height: 400px;"></div>
+        </li>
+    </ul>
 {% endblock %}
