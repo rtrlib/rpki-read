@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block content %}
+{% block script %}
     <script type="text/javascript" src="https://www.google.com/jsapi"></script>
     <script type="text/javascript">
       google.load("visualization", "1", {packages:["corechart"]});
@@ -11,11 +11,12 @@
             title: 'Overall Validation Results',
             slices: {
                 0: { color: '#33a02c' },
-                1: { color: '#e31a1c'},
-                2: { color: '#ff7f00'},
+                1: { color: '#e31a1c' },
+                2: { color: '#ff7f00' },
                 3: { color: '#d9d9d9' }
             },
-            is3D: true
+            is3D: true,
+            chartArea:{left:0,top:10,width:'100%',height:'100%'}
         };
         var chart = new google.visualization.PieChart(document.getElementById('piechart_all'));
         chart.draw(data, options);
@@ -25,26 +26,39 @@
           title: 'Validation States',
           slices: {
               0: { color: '#33a02c' },
-              1: { color: '#e31a1c'},
-              2: { color: '#ff7f00'}
+              1: { color: '#e31a1c' },
+              2: { color: '#ff7f00' }
           },
           is3D: true,
+          chartArea:{left:0,top:10,width:'100%',height:'100%'}
         };
         var chart_val = new google.visualization.PieChart(document.getElementById('piechart_val'));
         chart_val.draw(data_val, options_val);
       }
     </script>
-    <div id="numbers" style="width: 900px; height: 50px;display: flex; justify-content: space-between;">
-        <span style="font-weight:bold; margin-right: 10px; margin-left: 10px;"> Latest Timestamp: <span class="badge badge-info"> {{ stats.latest_ts }} </span></span>
-        <span style="font-weight:bold; margin-right: 10px; margin-left: 10px;"> # RIB entries: <span class="badge badge-info"> {{ stats.sum_all }} </span></span>
-        <span style="font-weight:bold; margin-right: 10px; margin-left: 10px;"> with RPKI: <span class="badge badge-info"> {{ stats.sum_val }} </span></span>
-    </div>
-    <ul class="thumbnails">
-        <li class="span4">
-            <div id="piechart_all" style="width: 500px; height: 400px;"></div>
-        </li>
-        <li class="span4">
-            <div id="piechart_val" style="width: 500px; height: 400px;"></div>
-        </li>
-    </ul>
+{% endblock %}
+{% block content %}
+        <div class="row">
+            <div class="col-xs-12">
+                <p class="lead"> Latest Timestamp <span class="label label-info"> {{ stats.latest_ts }} </span></p>
+            </div>
+        </div>
+        <hr>
+        <div class="row">
+            <div class="col-md-6 col-xs-12"><div class="thumbnail">
+                <div id="piechart_all"></div>
+                <div class="caption">
+                    <h2>All known Origins</h2>
+                    <h3><span class="label label-info"> {{ stats.sum_all }} </span></h3>
+                    <p>bla bla bla bla</p>
+                </div>
+            </div></div>
+            <div class="col-md-6 col-xs-12"><div class="thumbnail">
+                <div id="piechart_val"></div>
+                <div class="caption">
+                    <h2>Origins with ROA </h2><h3><span class="label label-info"> {{ stats.sum_val }} </span></h3>
+                    <p>bla bla bla bla</p>
+                </div>
+            </div></div>
+        </div>
 {% endblock %}
