@@ -1,129 +1,25 @@
 #!/usr/bin/python
-
 from __future__ import print_function
 
 import argparse
 import calendar
 import json
 import os
-import psycopg2
 import re
 import socket
 import string
 import sys
 
 import multiprocessing as mp
+
 from datetime import datetime
 from subprocess import PIPE, Popen
-from psycopg2.extras import Json
 
+# internal imports
 from settings import *
+from utils import print_error, print_info, print_log, print_warn
 
-verbose = False
-warning = False
-logging = False
 keepwithdrawn = False
-
-def print_log(*objs):
-    if logging or verbose:
-        print("[LOGS] ", *objs, file=sys.stderr)
-
-def print_info(*objs):
-    if verbose:
-        print("[INFO] ", *objs, file=sys.stderr)
-
-def print_warn(*objs):
-    if warning or verbose:
-        print("[WARN] ", *objs, file=sys.stderr)
-
-def print_error(*objs):
-    print("[ERROR] ", *objs, file=sys.stderr)
-
-def outputPostgres(dbconnstr, queue):
-    print_info(dbconnstr)
-    try:
-        con = psycopg2.connect(dbconnstr)
-    except Exception, e:
-        print_error("failed with: %s" % (e.message))
-        print_error("connecting to database")
-        sys.exit(1)
-    cur = con.cursor()
-    update_validity =   "UPDATE t_validity SET state=%s, ts=%s, roas=%s, " \
-                        "next_hop=%s,src_asn=%s, src_addr=%s WHERE prefix=%s"
-    insert_validity =   "INSERT INTO t_validity (prefix, origin, state, ts, roas, next_hop, src_asn, src_addr) " \
-                        "SELECT %s, %s, %s, %s, %s, %s, %s, %s " \
-                        "WHERE NOT EXISTS (SELECT 1 FROM t_validity WHERE prefix=%s)"
-    delete_validty =    "DELETE FROM t_validity WHERE prefix=%s"
-    delete_all =        "DELETE FROM t_validity *"
-    try:
-        cur.execute(delete_all)
-        con.commit()
-    except Exception, e:
-        print_error("deleting all existing entries")
-        print_error("... failed with: %s" % (e.message))
-        con.rollback()
-
-    while True:
-        data = queue.get()
-        if (data == 'DONE'):
-            break
-        try:
-            if data['type'] == 'announcement':
-                vr = data['validated_route']
-                rt = vr['route']
-                vl = vr['validity']
-                roas = vl['VRPs']
-                src = data['source']
-
-                ts_str = datetime.fromtimestamp(
-                        int(data['timestamp'])).strftime('%Y-%m-%d %H:%M:%S')
-                #print_info("converted unix timestamp: " + ts_str)
-                try:
-                    cur.execute(update_validity, [ vl['state'], ts_str, Json(roas),
-                        data['next_hop'], src['asn'], src['addr'], rt['prefix'] ])
-                    cur.execute(insert_validity, [rt['prefix'], rt['origin_asn'][2:],
-                        vl['state'], ts_str, Json(roas),
-                        data['next_hop'], src['asn'], src['addr'], rt['prefix']])
-                    con.commit()
-                except Exception, e:
-                    print_error("updating or inserting entry, announcement")
-                    print_error("... failed with: %s" % (e.message))
-                    con.rollback()
-            elif (data['type'] == 'withdraw'):
-                if keepwithdrawn:
-                    ts_str = datetime.fromtimestamp(
-                        int(data['timestamp'])).strftime('%Y-%m-%d %H:%M:%S')
-                    #print_info("converted unix timestamp: " + ts_str)
-                    src = data['source']
-                    try:
-                        cur.execute(update_validity, ['withdrawn', ts_str, None,
-                            None, src['asn'], src['addr'], data['prefix']] )
-                        con.commit()
-                    except Exception, e:
-                        print_error("updating entry, withdraw")
-                        print_error("... failed with: %s" % (e.message))
-                        con.rollback()
-                else:
-                    try:
-                        cur.execute(delete_validty, [data['prefix']])
-                        con.commit()
-                    except Exception, e:
-                        print_error("deleting entry, withdraw")
-                        print_error("... failed with: %s" % (e.message))
-                        con.rollback()
-            else:
-                continue
-        except Exception, e:
-            print_error("outputPostgres failed with: %s" % (e.message))
-            if (con.closed):
-                try:
-                    con = psycopg2.connect(dbconnstr)
-                except Exception, e:
-                    print_error("failed with: %s" % (e.message))
-                    print_error("connecting to database")
-                    sys.exit(1)
-                cur = con.cursor()
-    return True
 
 def main():
     parser = argparse.ArgumentParser(description='', epilog='')
@@ -163,10 +59,16 @@ def main():
     if args['couchdb']:
         print_error("Support for CouchDB not implemented yet!")
         sys.exit(1)
-    if args['mongodb']:
-        print_error("Support for MongoDB not implemented yet!")
-        sys.exit(1)
-    if args['postgres']:
+    elif args['mongodb']:
+        from pymongo import MongoClient
+        from mongodb import outputMongoDB
+        dbconnstr = args['mongodb'].strip()
+        output_p = mp.Process(  target=outputMongoDB,
+                                args=(dbconnstr,queue))
+    elif args['postgres']:
+        import psycopg2
+        from psycopg2.extras import Json
+        from postgresql import outputPostgres
         dbconnstr = args['postgres'].strip()
         output_p = mp.Process(  target=outputPostgres,
                                 args=(dbconnstr,queue))

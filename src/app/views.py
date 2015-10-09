@@ -1,7 +1,7 @@
 import json
 from flask import render_template
 from app import app
-from dbconn import get_validation_stats
+from dbconn import get_validation_stats, get_validation_tables
 
 @app.route('/about')
 def about():
@@ -17,3 +17,8 @@ def stats():
             'sum_all': stats['sum_all'], 'sum_val': stats['sum_val'],
             'latest_ts': stats['latest_ts']}
     return render_template("stats.html", stats=data)
+
+@app.route('/tables')
+def tables():
+    tables = get_validation_tables()
+    return render_template("tables.html", tables=tables)
