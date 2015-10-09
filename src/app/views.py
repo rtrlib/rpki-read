@@ -10,7 +10,7 @@ def about():
 
 @app.route('/stats')
 def stats():
-    stats = get_validation_stats("dbname=lbv host=localhost port=5432")
+    stats = get_validation_stats()
     chart_all = stats['table']
     chart_val = chart_all[:-1]
     data = {'chart_all': chart_all, 'chart_val': chart_val,

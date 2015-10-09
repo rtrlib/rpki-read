@@ -3,7 +3,24 @@ import sys
 
 from datetime import datetime
 
-def get_validation_stats(dbconnstr):
+database = "postgres"
+pg_dbconnstr = "dbname=lbv host=localhost port=5432"
+
+def get_validation_table():
+    if database == 'postgres':
+        return pg_get_validation_table(pg_dbconnstr)
+
+    print "NOT IMPLEMENTED YET!"
+    return None
+
+def get_validation_stats():
+    if database == 'postgres':
+        return pg_get_validation_stats(pg_dbconnstr)
+
+    print "NOT IMPLEMENTED YET!"
+    return None
+
+def pg_get_validation_stats(dbconnstr):
     try:
         con = psycopg2.connect(dbconnstr)
     except Exception, e:
@@ -52,3 +69,12 @@ def get_validation_stats(dbconnstr):
     stats['sum_all'] = sum_all
     stats['sum_val'] = sum_val
     return stats
+
+def pg_get_validation_table(dbconnstr):
+    try:
+        con = psycopg2.connect(dbconnstr)
+    except Exception, e:
+        print "connecting to database"
+        print e.message
+        sys.exit(1)
+    cur = con.cursor()
