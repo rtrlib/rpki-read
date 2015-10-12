@@ -1,9 +1,8 @@
 #!/usr/bin/python
-from __future__ import print_function
-
 import argparse
 import calendar
 import json
+import logging
 import os
 import re
 import socket
@@ -16,7 +15,6 @@ from subprocess import PIPE, Popen
 
 # internal imports
 from settings import *
-from utils import print_error, print_info, print_log, print_warn
 
 def _get_validity(validation_result_string):
     validity = dict()
@@ -81,10 +79,10 @@ def _get_validity(validation_result_string):
     return validity
 
 def validator(in_queue, out_queue, cache_host, cache_port):
-    print_log("start validator thread")
+    logging.info ("start validator thread")
     cache_cmd = [validator_path, cache_host, cache_port]
     validator_process = Popen(cache_cmd, stdin=PIPE, stdout=PIPE)
-    print_log("CALL validator thread (%s:%s)" % (cache_host, cache_port))
+    logging.info ("run validator thread (%s:%s)" % (cache_host, cache_port))
     run = True
     while run:
         validation_entry = in_queue.get(True)
@@ -98,7 +96,7 @@ def validator(in_queue, out_queue, cache_host, cache_port):
         validator_process.stdin.write(bgp_entry_str + '\n')
         validation_result = validator_process.stdout.readline().strip()
         validity =  _get_validity(validation_result)
-        print_info(cache_host+":"+cache_port + " -> " + network+"/"+masklen +
+        logging.debug (cache_host+":"+cache_port + " -> " + network+"/"+masklen +
                     "(AS"+asn+") -> " + validity['state'])
         return_data = dict()
         return_data['route'] = dict()
@@ -116,29 +114,26 @@ def validator(in_queue, out_queue, cache_host, cache_port):
     return True
 
 def output(queue, format_json):
-    print_log("start output")
+    logging.info ("start output")
     while True:
         odata = queue.get()
         if (odata == 'STOP'):
             break
         try:
             if format_json:
-                print(json.dumps(odata, sort_keys=True,
-                                 indent=2, separators=(',', ': ')))
+                print json.dumps(odata, sort_keys=True,
+                                 indent=2, separators=(',', ': '))
             else:
-                print(json.dumps(odata))
+                print json.dumps(odata)
         except Exception, e:
-            print_error("output thread failed with: %s" % e.message)
+            logging.exception ("output thread failed with: %s", e.message)
     return True
 
 def main():
     parser = argparse.ArgumentParser(description='', epilog='')
-    parser.add_argument('-l', '--logging',
-                        help='Ouptut log info.', action='store_true')
-    parser.add_argument('-w', '--warning',
-                        help='Output warnings.', action='store_true')
-    parser.add_argument('-v', '--verbose',
-                        help='Verbose output.', action='store_true')
+    parser.add_argument('-l', '--loglevel',
+                        help='Set loglevel [DEBUG,INFO,WARNING,ERROR,CRITICAL].',
+                        type=str, default='WARNING')
     parser.add_argument('-a', '--addr',
                         help='Address or name of RPKI cache server.',
                         default=default_cache_server['host'])
@@ -150,18 +145,17 @@ def main():
                         action='store_true')
     args = vars(parser.parse_args())
 
-    global verbose
-    verbose   = args['verbose']
-    global warning
-    warning   = args['warning']
-    global logging
-    logging = args['logging']
+    numeric_level = getattr(logging, args['loglevel'].upper(), None)
+    if not isinstance(numeric_level, int):
+        raise ValueError('Invalid log level: %s' % loglevel)
+    logging.basicConfig(level=numeric_level,
+                        format='%(asctime)s : %(levelname)s : %(message)s')
 
     addr = args['addr'].strip()
     port = args['port']
 
     # BEGIN
-    print_log(datetime.now().strftime('%Y-%m-%d %H:%M:%S') + " starting ...")
+    logging.info ("START")
     # init queues
     input_queue = mp.Queue()
     output_queue = mp.Queue()
@@ -179,7 +173,7 @@ def main():
         try:
             data = json.loads(line)
         except:
-            print_warn("Failed to parse JSON from input.")
+            logging.exception ("Failed to parse JSON from input.")
         else:
             if data['type'] == 'update':
                 withdraws = data['withdraw']
@@ -195,7 +189,7 @@ def main():
                 origin = path[-1]
                 prefixes = data['announce']
                 for p in prefixes:
-                    print_info (p+" : "+origin)
+                    logging.debug (p+" : "+origin)
                     input_queue.put( (  p, origin,
                                         data['source'],
                                         data['timestamp'],
@@ -203,6 +197,7 @@ def main():
 
     input_queue.put("STOP")
     output_queue.put("STOP")
+    logging.info("FINISH")
 
 
 if __name__ == "__main__":

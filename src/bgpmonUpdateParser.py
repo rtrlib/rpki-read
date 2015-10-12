@@ -1,6 +1,4 @@
 #!/usr/bin/python
-
-from __future__ import print_function
 import sys
 import os
 import json
@@ -10,6 +8,7 @@ import re
 import xml
 import argparse
 import calendar
+import logging
 
 import multiprocessing as mp
 import xml.etree.ElementTree as ET
@@ -18,22 +17,22 @@ from xml.dom import minidom
 from datetime import datetime
 
 from settings import default_bgpmon_server
-from utils import print_error, print_info, print_log, print_warn
 
 def parse_bgp_message(xml):
+    logging.info("CALL parse_bgp_message")
     try:
         tree = ET.fromstring(xml)
     except:
-        print_error("Cannot parse XML: %s!" % xml)
+        logging.exception ("Cannot parse XML: %s!", xml)
         return None
-    print_info("root: %s" % tree.tag)
+    logging.debug ("root: %s" % tree.tag)
     for child in tree:
-        print_info(child.tag)
+        logging.debug (child.tag)
 
     # check if source exists, otherwise return
     src = tree.find('{urn:ietf:params:xml:ns:bgp_monitor}SOURCE')
     if src is None:
-        print_warn("Invalid XML, no source!")
+        logging.warning ("Invalid XML, no source!")
         return None
     src_peer = dict()
     src_peer['addr'] = src.find('{urn:ietf:params:xml:ns:bgp_monitor}ADDRESS').text
@@ -43,7 +42,7 @@ def parse_bgp_message(xml):
     # get timestamp
     dt = tree.find('{urn:ietf:params:xml:ns:bgp_monitor}OBSERVED_TIME')
     if dt is None:
-        print_error("Invalid XML, no source!")
+        logging.warning ("Invalid XML, no source!")
         return None
     ts = dt.find('{urn:ietf:params:xml:ns:bgp_monitor}TIMESTAMP').text
 
@@ -51,13 +50,13 @@ def parse_bgp_message(xml):
     # check wether it is a keep alive message
     keep_alive = tree.find('{urn:ietf:params:xml:ns:xfb}KEEP_ALIVE')
     if keep_alive is not None:
-        print_log("BGP KEEP ALIVE %s (AS %s)" % (src_peer['addr'], src_peer['asn']))
+        logging.debug ("BGP KEEP ALIVE %s (AS %s)" % (src_peer['addr'], src_peer['asn']))
         return None
 
     # proceed with bgp update parsing
     update = tree.find('{urn:ietf:params:xml:ns:xfb}UPDATE')
     if update is None:
-        print_error("Invalid XML, no update!")
+        logging.warning ("Invalid XML, no update!")
         return None
 
     # init return struct
@@ -73,7 +72,7 @@ def parse_bgp_message(xml):
     # add withdrawn prefixes
     withdraws = update.findall('.//{urn:ietf:params:xml:ns:xfb}WITHDRAW')
     for withdraw in withdraws:
-        print_info("BGP WITHDRAW %s by AS %s" % (withdraw.text,src_peer['asn']))
+        logging.debug ("BGP WITHDRAW %s by AS %s" % (withdraw.text,src_peer['asn']))
         bgp_message['withdraw'].append(str(withdraw.text))
 
     # add AS path
@@ -90,19 +89,19 @@ def parse_bgp_message(xml):
     # add announced prefixes
     prefixes = update.findall('.//{urn:ietf:params:xml:ns:xfb}NLRI')
     for prefix in prefixes:
-        print_info("BGP ANNOUNCE %s by AS %s" % (prefix.text,src_peer['asn']))
+        logging.debug ("BGP ANNOUNCE %s by AS %s" % (prefix.text,src_peer['asn']))
         bgp_message['announce'].append(str(prefix.text))
 
     return bgp_message
 
 def recv_bgpmon_messages(host,port, queue):
-    print_log("CALL recv_bgpmon_updates (%s:%d)" % (host,port))
+    logging.info ("CALL recv_bgpmon_updates (%s:%d)", host, port)
     # open connection
     sock =  socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         sock.connect((host,port))
     except:
-        print_error("Failed to connect to BGPmon!")
+        logging.critical ("Failed to connect to BGPmon!")
         sys.exit(1)
 
     data = ""
@@ -122,24 +121,21 @@ def recv_bgpmon_messages(host,port, queue):
     return True
 
 def output(queue):
-    print_log("CALL output")
+    logging.info ("CALL output")
     while True:
         odata = queue.get()
         if (odata == 'STOP'):
             break
         json_str = json.dumps(odata)
-        print(json_str, file=sys.stdout)
+        print json_str
         sys.stdout.flush()
     return True
 
 def main():
     parser = argparse.ArgumentParser(description='', epilog='')
-    parser.add_argument('-l', '--logging',
-                        help='Ouptut log info.', action='store_true')
-    parser.add_argument('-w', '--warning',
-                        help='Output warnings.', action='store_true')
-    parser.add_argument('-v', '--verbose',
-                        help='Verbose output.', action='store_true')
+    parser.add_argument('-l', '--loglevel',
+                        help='Set loglevel [DEBUG,INFO,WARNING,ERROR,CRITICAL].',
+                        type=str, default='WARNING')
     parser.add_argument('-a', '--addr',
                         help='Address or name of BGPmon host.',
                         default=default_bgpmon_server['host'])
@@ -148,18 +144,16 @@ def main():
                         default=default_bgpmon_server['port'], type=int)
     args = vars(parser.parse_args())
 
-    global verbose
-    verbose   = args['verbose']
-    global warning
-    warning   = args['warning']
-    global logging
-    logging = args['logging']
-
-    # BEGIN
-    print_log(datetime.now().strftime('%Y-%m-%d %H:%M:%S') + " starting ...")
+    numeric_level = getattr(logging, args['loglevel'].upper(), None)
+    if not isinstance(numeric_level, int):
+        raise ValueError('Invalid log level: %s' % loglevel)
+    logging.basicConfig(level=numeric_level,
+                        format='%(asctime)s : %(levelname)s : %(message)s')
 
     port = args['port']
     addr = args['addr'].strip()
+
+    logging.info("START")
 
     output_queue = mp.Queue()
     ot = mp.Process(target=output,
@@ -168,13 +162,12 @@ def main():
         ot.start()
         recv_bgpmon_messages(addr,port,output_queue)
     except KeyboardInterrupt:
-        print_warn("ABORT")
+        logging.exception ("ABORT")
     finally:
         output_queue.put("STOP")
 
     ot.join()
-
-    print_log(datetime.now().strftime('%Y-%m-%d %H:%M:%S') +  " done ...")
+    logging.info("FINISH")
     # END
 
 if __name__ == "__main__":

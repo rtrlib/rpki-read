@@ -2,9 +2,11 @@ import psycopg2
 import sys
 
 from datetime import datetime
+from pymongo import MongoClient
 
-database = "postgres"
+database = "mongodb"
 pg_dbconnstr = "dbname=lbv host=localhost port=5432"
+mg_dbconnstr = "mongodb://localhost:27017/"
 
 def get_validation_tables():
     if database == 'postgres':
@@ -16,9 +18,47 @@ def get_validation_tables():
 def get_validation_stats():
     if database == 'postgres':
         return pg_get_validation_stats(pg_dbconnstr)
-
+    elif database == 'mongodb':
+        return mg_get_validation_stats(mg_dbconnstr)
     print "NOT IMPLEMENTED YET!"
     return None
+
+def mg_get_validation_stats(dbconnstr):
+    client = MongoClient(dbconnstr)
+    db = client['lbv']
+
+    table = [['Validity', 'Count'], ]
+    sum_all = 0
+    sum_val = 0
+    stats = dict()
+    stats['latest_ts'] = 'now'
+    num_valid = 0
+    num_invalid_as = 0
+    num_invalid_len = 0
+    num_not_found = 0
+    try:
+        num_valid = db.validity.find({'validated_route.validity.state' : 'Valid' }).count()
+        num_invalid_as = db.validity.find({'validated_route.validity.state' : 'InvalidAS' }).count()
+        num_invalid_len = db.validity.find({'validated_route.validity.state' : 'InvalidLength' }).count()
+        num_not_found = db.validity.find({'validated_route.validity.state' : 'NotFound' }).count()
+        ts_tmp = db.validity.find_one(projection={'timestamp': True, '_id': False}, sort=[('timestamp', -1)])['timestamp']
+        stats['latest_ts'] = datetime.fromtimestamp(int(ts_tmp)).strftime('%Y-%m-%d %H:%M:%S')
+    except Exception, e:
+        print "QUERY failed with"
+        print e.message
+
+    table.append(['Valid', num_valid])
+    table.append(['InvalidAS', num_invalid_as])
+    table.append(['InvalidLength', num_invalid_len])
+    table.append(['NotFound', num_not_found])
+    sum_val = num_valid + num_invalid_as + num_invalid_len
+    sum_all = sum_val + num_not_found
+
+    stats['table'] = table
+    stats['sum_all'] = sum_all
+    stats['sum_val'] = sum_val
+
+    return stats
 
 def pg_get_validation_stats(dbconnstr):
     try:

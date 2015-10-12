@@ -5,7 +5,7 @@ import sys
 from psycopg2.extras import Json
 
 # internal imports
-from utils import print_error, print_info, print_log, print_warn
+from utils import *
 
 keepwithdrawn = False
 
