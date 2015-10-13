@@ -1,19 +1,20 @@
 {% extends "base.html" %}
 {% block script %}
+    <meta http-equiv="refresh" content="60" >
     <script type="text/javascript" src="https://www.google.com/jsapi"></script>
     <script type="text/javascript">
-      google.load("visualization", "1", {packages:["corechart"]});
+      google.load("visualization", "1", {packages:["corechart"], 'language': 'en'});
       google.setOnLoadCallback(drawChart);
       function drawChart() {
 
-        var data = google.visualization.arrayToDataTable({{ stats.chart_all|tojson }});
+        var data = google.visualization.arrayToDataTable({{ stats.table_all|tojson }});
         var options = {
             title: 'Overall Validation Results',
             slices: {
                 0: { color: '#33a02c' },
-                1: { color: '#e31a1c' },
-                2: { color: '#ff7f00' },
-                3: { color: '#d9d9d9' }
+                1: { color: '#ff7f00' },
+                2: { color: '#e31a1c' },
+                3: { color: '#888888' }
             },
             is3D: true,
             chartArea:{left:0,top:10,width:'100%',height:'100%'}
@@ -21,13 +22,13 @@
         var chart = new google.visualization.PieChart(document.getElementById('piechart_all'));
         chart.draw(data, options);
 
-        var data_val = google.visualization.arrayToDataTable({{ stats.chart_val|tojson }});
+        var data_val = google.visualization.arrayToDataTable({{ stats.table_roa|tojson }});
         var options_val = {
           title: 'Validation States',
           slices: {
               0: { color: '#33a02c' },
-              1: { color: '#e31a1c' },
-              2: { color: '#ff7f00' }
+              1: { color: '#ff7f00' },
+              2: { color: '#e31a1c' }
           },
           is3D: true,
           chartArea:{left:0,top:10,width:'100%',height:'100%'}
@@ -40,25 +41,52 @@
 {% block content %}
         <div class="row">
             <div class="col-xs-12">
-                <p class="lead"> Latest Timestamp <span class="label label-info"> {{ stats.latest_ts }} </span></p>
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h3>Latest validation results</h3>
+                        <h4> <span class="label label-info">{{ stats.latest_ts }}</span></h4>
+                    </div>
+                    <ul class="list-group">
+                    <li class="clearfix lead list-group-item">
+                        <span class="label label-default"># {{ stats.num_not_found }}</span>
+                        <span class="pull-right">Not Found</span>
+                    </li>
+                    <li class="clearfix lead list-group-item">
+                        <span class="label label-success"># {{ stats.num_valid }}</span>
+                        <span class="pull-right">Valid</span>
+                    </li>
+                    <li class="clearfix lead list-group-item">
+                        <span class="label label-warning"># {{ stats.num_invalid_len }}</span>
+                        <span class="pull-right">Invalid Length</span>
+                    </li>
+                    <li class="clearfix lead list-group-item">
+                        <span class="label label-danger"># {{ stats.num_invalid_as }}</span>
+                        <span class="pull-right">Invalid AS</span>
+                    </li>
+                    </ul>
+                </div>
             </div>
         </div>
-        <hr>
         <div class="row">
-            <div class="col-md-6 col-xs-12"><div class="thumbnail">
+            <div class="col-md-6 col-xs-12"><div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3>All known origins</h3>
+                    <h4><span class="label label-info"># {{ stats.num_not_found + stats.num_valid + stats.num_invalid_as + stats.num_invalid_len }}</span></h4>
+                </div>
+                <div class="panel-body">
+                    <p></p>
+                </div>
                 <div id="piechart_all"></div>
-                <div class="caption">
-                    <h2>All known Origins</h2>
-                    <h3><span class="label label-info"> {{ stats.sum_all }} </span></h3>
-                    <p>bla bla bla bla</p>
-                </div>
             </div></div>
-            <div class="col-md-6 col-xs-12"><div class="thumbnail">
-                <div id="piechart_val"></div>
-                <div class="caption">
-                    <h2>Origins with ROA </h2><h3><span class="label label-info"> {{ stats.sum_val }} </span></h3>
-                    <p>bla bla bla bla</p>
+            <div class="col-md-6 col-xs-12"><div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3>Origins with ROA</h3>
+                    <h4><span class="label label-info"># {{stats.num_valid + stats.num_invalid_as + stats.num_invalid_len }}</span></h4>
                 </div>
+                <div class="panel-body">
+                    <p></p>
+                </div>
+                <div id="piechart_val"></div>
             </div></div>
         </div>
 {% endblock %}

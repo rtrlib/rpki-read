@@ -14,7 +14,7 @@ def outputMongoDB(dbconnstr, queue):
         if (data == 'DONE'):
             break
         if data['type'] == 'announcement':
-            logging.info ("process announcement")
+            logging.debug ("process announcement")
             try:
                 logging.debug ("insert or replace prefix: " + data['validated_route']['route']['prefix'])
                 result = db.validity.replace_one(
@@ -25,7 +25,7 @@ def outputMongoDB(dbconnstr, queue):
             except Exception, e:
                 logging.exception ("updating or inserting entry, failed with: %s ", e.message)
         elif (data['type'] == 'withdraw'):
-            logging.info ("process withdraw")
+            logging.debug ("process withdraw")
             try:
                 logging.debug("delete prefix if exists: " + data['prefix'] )
                 result = db.validity.delete_one({ 'validated_route.route.prefix' : data['prefix'] })
