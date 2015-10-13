@@ -126,7 +126,7 @@ def output(queue, format_json):
             else:
                 print json.dumps(odata)
         except Exception, e:
-            logging.exception ("output thread failed with: %s", e.message)
+            logging.exception ("output thread failed with: " + e.message)
     return True
 
 def main():

@@ -1,3 +1,4 @@
+import logging
 import psycopg2
 import sys
 
@@ -6,13 +7,13 @@ from pymongo import MongoClient
 
 database = "mongodb"
 pg_dbconnstr = "dbname=lbv host=localhost port=5432"
-mg_dbconnstr = "mongodb://localhost:27017/"
+mg_dbconnstr = "mongodb://localhost:27017/lbv2"
 
 def get_validation_tables():
     if database == 'postgres':
         return pg_get_validation_tables(pg_dbconnstr)
 
-    print "NOT IMPLEMENTED YET!"
+    logging.warning ("NOT IMPLEMENTED YET!")
     return None
 
 def get_validation_stats():
@@ -20,12 +21,12 @@ def get_validation_stats():
         return pg_get_validation_stats(pg_dbconnstr)
     elif database == 'mongodb':
         return mg_get_validation_stats(mg_dbconnstr)
-    print "NOT IMPLEMENTED YET!"
-    return None
+    logging.warning ("NOT IMPLEMENTED YET!")
+    return ''
 
 def mg_get_validation_stats(dbconnstr):
     client = MongoClient(dbconnstr)
-    db = client['lbv']
+    db = client.get_default_database()
 
     table = [['Validity', 'Count'], ]
     sum_all = 0
@@ -44,8 +45,7 @@ def mg_get_validation_stats(dbconnstr):
         ts_tmp = db.validity.find_one(projection={'timestamp': True, '_id': False}, sort=[('timestamp', -1)])['timestamp']
         stats['latest_ts'] = datetime.fromtimestamp(int(ts_tmp)).strftime('%Y-%m-%d %H:%M:%S')
     except Exception, e:
-        print "QUERY failed with"
-        print e.message
+        logging.exception ("QUERY failed with: " + e.message)
 
     table.append(['Valid', num_valid])
     table.append(['InvalidAS', num_invalid_as])
@@ -64,8 +64,7 @@ def pg_get_validation_stats(dbconnstr):
     try:
         con = psycopg2.connect(dbconnstr)
     except Exception, e:
-        print "connecting to database"
-        print e.message
+        logging.exception ("connecting to database, failed with: " + e.message)
         sys.exit(1)
     cur = con.cursor()
     counts = dict()
@@ -80,8 +79,7 @@ def pg_get_validation_stats(dbconnstr):
         cur.execute(query)
         rs = cur.fetchall()
     except Exception, e:
-        print "QUERY failed with"
-        print e.message
+        logging.exception ("QUERY failed with: " + e.message)
         con.rollback()
     else:
         for row in rs:
@@ -90,8 +88,7 @@ def pg_get_validation_stats(dbconnstr):
         cur.execute(query_ts)
         rs = cur.fetchone()
     except Exception, e:
-        print "QUERY failed with"
-        print e.message
+        logging.exception ("QUERY failed with: " + e.message)
         con.rollback()
     else:
         stats['latest_ts'] = rs[0].strftime('%Y-%m-%d %H:%M:%S')
@@ -114,8 +111,7 @@ def pg_get_validation_tables(dbconnstr):
     try:
         con = psycopg2.connect(dbconnstr)
     except Exception, e:
-        print "connecting to database"
-        print e.message
+        logging.exception ("connecting to database, failed with: " + e.message)
         sys.exit(1)
     cur = con.cursor()
     query = "SELECT prefix, origin, state, ts, roas FROM t_validity WHERE state != 'NotFound' ORDER BY origin"
@@ -127,8 +123,7 @@ def pg_get_validation_tables(dbconnstr):
         cur.execute(query)
         rs = cur.fetchall()
     except Exception, e:
-        print "QUERY failed with"
-        print e.message
+        logging.exception ("QUERY failed with: " + e.message)
         con.rollback()
     else:
         for row in rs:

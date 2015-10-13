@@ -23,7 +23,7 @@ def parse_bgp_message(xml):
     try:
         tree = ET.fromstring(xml)
     except:
-        logging.exception ("Cannot parse XML: %s!", xml)
+        logging.exception ("Cannot parse XML: " + xml)
         return None
     logging.debug ("root: %s" % tree.tag)
     for child in tree:
