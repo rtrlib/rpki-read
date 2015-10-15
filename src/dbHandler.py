@@ -19,6 +19,9 @@ from settings import *
 
 def main():
     parser = argparse.ArgumentParser(description='', epilog='')
+    parser.add_argument('-d', '--dropdata',
+                        help='Drop/delete all existing data in the database.',
+                        action='store_true', default=False)
     parser.add_argument('-l', '--loglevel',
                         help='Set loglevel [DEBUG,INFO,WARNING,ERROR,CRITICAL].',
                         type=str, default='WARNING')
@@ -49,19 +52,16 @@ def main():
         sys.exit(1)
     elif args['mongodb']:
         logging.info("database: MongoDB")
-        from pymongo import MongoClient
         from mongodb import outputMongoDB
         dbconnstr = args['mongodb'].strip()
         output_p = mp.Process(  target=outputMongoDB,
-                                args=(dbconnstr,queue))
+                                args=(dbconnstr,queue,args['dropdata']))
     elif args['postgres']:
         logging.info("database: PostgreSQL")
-        import psycopg2
-        from psycopg2.extras import Json
         from postgresql import outputPostgres
         dbconnstr = args['postgres'].strip()
         output_p = mp.Process(  target=outputPostgres,
-                                args=(dbconnstr,queue))
+                                args=(dbconnstr,queue,args['dropdata']))
 
     output_p.start()
     # main loop

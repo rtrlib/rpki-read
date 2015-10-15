@@ -3,7 +3,7 @@ import psycopg2
 import sys
 from psycopg2.extras import Json
 
-def outputPostgres(dbconnstr, queue):
+def outputPostgres(dbconnstr, queue, dropdata):
     logging.info (dbconnstr)
     try:
         con = psycopg2.connect(dbconnstr)
@@ -17,14 +17,14 @@ def outputPostgres(dbconnstr, queue):
                         "SELECT %s, %s, %s, %s, %s, %s, %s, %s " \
                         "WHERE NOT EXISTS (SELECT 1 FROM t_validity WHERE prefix=%s)"
     delete_validty =    "DELETE FROM t_validity WHERE prefix=%s"
-    delete_all =        "DELETE FROM t_validity *"
-    try:
-        cur.execute(delete_all)
-        con.commit()
-    except Exception, e:
-        logging.exception ("delete existing entries, failed with: " + e.message)
-        con.rollback()
-
+    if dropdata:
+        try:
+            cur.execute("DELETE FROM t_validity *")
+            con.commit()
+        except Exception, e:
+            logging.exception ("delete existing entries, failed with: " + e.message)
+            con.rollback()
+    # end dropdata
     while True:
         data = queue.get()
         if (data == 'DONE'):

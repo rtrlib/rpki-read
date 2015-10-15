@@ -3,12 +3,13 @@ from __future__ import print_function
 import logging
 from pymongo import MongoClient
 
-def outputMongoDB(dbconnstr, queue):
+def outputMongoDB(dbconnstr, queue, dropdata):
     logging.debug ("CALL outputMongoDB")
     client = MongoClient(dbconnstr)
     db = client.get_default_database()
-    db.validity.drop()
-
+    if dropdata:
+        db.validity.drop()
+    # end dropdata
     while True:
         data = queue.get()
         if (data == 'DONE'):

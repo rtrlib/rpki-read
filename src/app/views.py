@@ -16,64 +16,20 @@ else:
     logging.critical("unknown database type!")
     sys.exit(1)
 
-def _create_dropdown(data):
-    hash_id = str(id(data))
-    num_roas = len(data['matched']) + len(data['unmatched_as']) + len(data['unmatched_length'])
-    html_dropdown = '<div class="dropdown">'
-    html_dropdown += '<button class="btn btn-default dropdown-toggle" type="button" id="'+hash_id
-    html_dropdown += '" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">'
-    html_dropdown += 'Show ('+str(num_roas)+') <span class="caret"></span></button>'
-    html_dropdown += '<ul class="dropdown-menu" style="padding:5px" aria-labelledby="'+hash_id+'">'
-    html_dropdown += '<li class="dropdown-header">matched</li>'
-    for m in data['matched']:
-        html_dropdown += '<li>'
-        html_dropdown += '<span>'+m['prefix']+' - '+m['max_length']+', '+m['asn']+'</span>'
-        html_dropdown += '</li>'
-    html_dropdown += '<li class="dropdown-header">unmatched AS</li>'
-    for m in data['unmatched_as']:
-        html_dropdown += '<li>'
-        html_dropdown += '<span>'+m['prefix']+' - '+m['max_length']+', '+m['asn']+'</span>'
-        html_dropdown += '</li>'
-    html_dropdown += '<li class="dropdown-header">unmatched Length</li>'
-    for m in data['unmatched_length']:
-        html_dropdown += '<li>'
-        html_dropdown += '<span>'+m['prefix']+' - '+m['max_length']+', '+m['asn']+'</span>'
-        html_dropdown += '</li>'
-    html_dropdown += '</ul></div>'
-
-    return html_dropdown
-
-def _create_html_table(data):
-    html_table = '<table class="table table-striped">'
-    html_table += '<thead><tr>'
-    html_table += '<th>Prefix</th><th>Origin AS</th><th>Validity</th><th>ROAs (#)</th>'
-    html_table += '</tr></thead>'
-    html_table += '<tbody>'
-    for d in data:
-        html_table += '<tr>'
-        html_table += '<td>'+d['prefix']+'</td>'
-        html_table += '<td>'+d['origin']+'</td>'
-        html_table += '<td>'+d['state']+'</td>'
-        html_table += '<td>'+ _create_dropdown(d['roas']) + '</td>'
-        html_table += '</tr>'
-    html_table += '</tbody></table>'
-    return html_table
-
-def _get_table(state, color):
+def _get_table_json(state):
     dlist = get_list(config.DATABASE_CONN, state)
-    nlist = sorted(dlist, key=lambda k: socket.inet_aton(str(IPNetwork(k['prefix']).ip)))
-    table = _create_html_table(nlist)
     data = dict()
-    data['table'] = table
-    data['count'] = len(nlist)
+    data['total'] = len(dlist)
     data['state'] = state
-    data['color'] = color
-    return render_template("vtable.html", data=data)
+    data['rows'] = dlist
+    return json.dumps(dlist, indent=2, separators=(',', ': '))
 
+## about page handler
 @app.route('/about')
 def about():
     return render_template("about.html")
 
+## stats handler
 @app.route('/')
 @app.route('/stats')
 def stats():
@@ -88,14 +44,31 @@ def stats():
     stats['table_all'] = table_all
     return render_template("stats.html", stats=stats)
 
+## table handler
 @app.route('/valid')
 def valid():
-    return _get_table('Valid', 'success')
+    config = {'url' : '/valid_json', 'color' : 'success', 'state' : 'Valid'}
+    return render_template("table.html", config=config)
 
 @app.route('/invalid_as')
 def invalid_as():
-    return _get_table('InvalidAS', 'danger')
+    config = {'url' : '/invalid_as_json', 'color' : 'danger', 'state' : 'InvalidAS'}
+    return render_template("table.html", config=config)
 
 @app.route('/invalid_len')
 def invalid_len():
-    return _get_table('InvalidLength', 'warning')
+    config = {'url' : '/invalid_len_json', 'color' : 'warning', 'state' : 'InvalidLength'}
+    return render_template("table.html", config=config)
+
+## table data as json
+@app.route('/valid_json')
+def valid_json():
+    return _get_table_json('Valid')
+
+@app.route('/invalid_as_json')
+def invalid_as_json():
+    return _get_table_json('InvalidAS')
+
+@app.route('/invalid_len_json')
+def invalid_len_table_json():
+    return _get_table_json('InvalidLength')

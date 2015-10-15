@@ -25,13 +25,13 @@ def get_validation_stats(dbconnstr):
 
     return stats
 
-def get_list(dbconnstr, validity):
+def get_list(dbconnstr, state):
     client = pymongo.MongoClient(dbconnstr)
     db = client.get_default_database()
     rlist = []
 
     try:
-        rset = db.validity.find({'validated_route.validity.state' : validity},{'_id' : 0, 'source' : 0, 'next_hop' : 0, 'type' : 0, 'timestamp' : 0})
+        rset = db.validity.find({'validated_route.validity.state' : state},{'_id' : 0, 'source' : 0, 'next_hop' : 0, 'type' : 0, 'timestamp' : 0})
     except Exception, e:
         logging.exception ("QUERY failed with: " + e.message)
     else:
