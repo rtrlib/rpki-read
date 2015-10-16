@@ -3,8 +3,52 @@ import psycopg2
 import sys
 from psycopg2.extras import Json
 
-def outputPostgres(dbconnstr, queue, dropdata):
-    logging.info (dbconnstr)
+def output_stat(dbconnstr, interval):
+    logging.info ("CALL output_stat postgresql, with: " +dbconnstr)
+    try:
+        con = psycopg2.connect(dbconnstr)
+    except Exception, e:
+        logging.exception ("connecting to database, failed with: " + e.message)
+        sys.exit(1)
+    cur = con.cursor()
+    while True:
+        counts = dict()
+        stats = dict()
+        ts = 'now'
+        query = "SELECT state, count(*) FROM t_validity GROUP BY state"
+        query_ts = "SELECT ts FROM t_validity ORDER BY ts DESC LIMIT 1"
+        insert = "INSERT INTO t_stats VALUES (%s, %s, %s, %s, %s)"
+        try:
+            cur.execute(query)
+            rs = cur.fetchall()
+        except Exception, e:
+            logging.exception ("QUERY failed with: " + e.message)
+            con.rollback()
+        else:
+            for row in rs:
+                counts[row[0]] = row[1]
+        try:
+            cur.execute(query_ts)
+            rs = cur.fetchone()
+        except Exception, e:
+            logging.exception ("QUERY failed with: " + e.message)
+            con.rollback()
+        else:
+            ts = rs[0].strftime('%Y-%m-%d %H:%M:%S')
+
+        if ts != 'now':
+            try:
+                cur.execute(insert, [ts,str(counts.get('Valid', 0)),
+                                        str(counts.get('InvalidAS', 0)),
+                                        str(counts.get('InvalidLength', 0)),
+                                        str(counts.get('NotFound', 0))])
+            except Exception, e:
+                logging.exception ("INSERT failed with: " + e.message)
+                con.rollback()
+        time.sleep(interval)
+
+def output_data(dbconnstr, queue, dropdata, keepdata):
+    logging.info ("CALL output_data postgresql, with: " +dbconnstr)
     try:
         con = psycopg2.connect(dbconnstr)
     except Exception, e:
@@ -30,6 +74,8 @@ def outputPostgres(dbconnstr, queue, dropdata):
         if (data == 'DONE'):
             break
         try:
+            if keepdata:
+                pass
             if data['type'] == 'announcement':
                 vr = data['validated_route']
                 rt = vr['route']

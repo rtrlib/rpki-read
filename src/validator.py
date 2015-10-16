@@ -96,14 +96,15 @@ def validator(in_queue, out_queue, cache_host, cache_port):
         validator_process.stdin.write(bgp_entry_str + '\n')
         validation_result = validator_process.stdout.readline().strip()
         validity =  _get_validity(validation_result)
-        logging.debug (cache_host+":"+cache_port + " -> " + network+"/"+masklen +
-                    "(AS"+asn+") -> " + validity['state'])
+        logging.debug (cache_host+":" +cache_port+ " -> " +validation_entry[0]+
+                    "(AS"+asn+") -> " +validity['state'])
         return_data = dict()
         return_data['route'] = dict()
         return_data['route']['origin_asn'] = "AS"+asn
         return_data['route']['prefix'] = validation_entry[0]
         return_data['validity'] = validity
         out_queue.put({ "type":"announcement",
+                        "prefix":validation_entry[0],
                         "source":validation_entry[2], # source
                         "timestamp":validation_entry[3], # timestamp
                         "next_hop":validation_entry[4], # next_hop

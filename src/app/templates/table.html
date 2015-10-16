@@ -8,7 +8,7 @@
         function formatROAs(value,row,index) {
             num_roas = value.matched.length + value.unmatched_as.length + value.unmatched_length.length;
             html_dropdown = '<div class="dropdown">'
-            html_dropdown += '<button class="btn btn-default dropdown-toggle" type="button" id="'+index;
+            html_dropdown += '<button class="btn btn-primary dropdown-toggle" type="button" id="'+index;
             html_dropdown += '" data-toggle="dropdown" area-haspopup="true" area-expanded="true">';
             html_dropdown += 'Show ('+num_roas.toString()+') <span class="caret"></span></button>';
             html_dropdown += '<ul class="dropdown-menu" style="padding:5px" area-labelledby="'+index+'">';

@@ -7,8 +7,12 @@
       google.setOnLoadCallback(drawChart);
       function drawChart() {
 
-        var data = google.visualization.arrayToDataTable({{ stats.table_all|tojson }});
-        var options = {
+        var pdata_all = google.visualization.arrayToDataTable({{ stats.table_all|tojson }});
+        var pdata_roa = google.visualization.arrayToDataTable({{ stats.table_roa|tojson }});
+        var ldata_all = google.visualization.arrayToDataTable({{ stats.stats_all|tojson }});
+        var ldata_roa = google.visualization.arrayToDataTable({{ stats.stats_roa|tojson }});
+
+        var popts_all = {
             title: 'Overall Validation Results',
             slices: {
                 0: { color: '#33a02c' },
@@ -19,11 +23,7 @@
             is3D: true,
             chartArea:{left:0,top:10,width:'100%',height:'100%'}
         };
-        var chart = new google.visualization.PieChart(document.getElementById('piechart_all'));
-        chart.draw(data, options);
-
-        var data_val = google.visualization.arrayToDataTable({{ stats.table_roa|tojson }});
-        var options_val = {
+        var popts_roa = {
           title: 'Validation States',
           slices: {
               0: { color: '#33a02c' },
@@ -33,8 +33,24 @@
           is3D: true,
           chartArea:{left:0,top:10,width:'100%',height:'100%'}
         };
-        var chart_val = new google.visualization.PieChart(document.getElementById('piechart_val'));
-        chart_val.draw(data_val, options_val);
+        var lopts_all = {
+            title: 'Statistics over time',
+            curveType: 'function',
+            legend: {position: 'bottom'}
+
+        };
+        var lopts_roa = {};
+
+        var pchart_all = new google.visualization.PieChart(document.getElementById('piechart_all'));
+        var pchart_roa = new google.visualization.PieChart(document.getElementById('piechart_roa'));
+        var lchart_all = new google.visualization.LineChart(document.getElementById('linechart_all'));
+        var lchart_roa = new google.visualization.LineChart(document.getElementById('linechart_roa'));
+
+        pchart_all.draw(pdata_all, popts_all);
+        pchart_roa.draw(pdata_roa, popts_roa);
+        lchart_all.draw(ldata_all, lopts_all);
+        lchart_roa.draw(ldata_roa, lopts_roa);
+
       }
     </script>
 {% endblock %}
@@ -44,7 +60,7 @@
                 <div class="panel panel-default">
                     <div class="panel-heading">
                         <h3>Latest validation results</h3>
-                        <h4> <span class="label label-info">{{ stats.latest_ts }}</span></h4>
+                        <h4> <span class="label label-primary">{{ stats.latest_ts }}</span></h4>
                     </div>
                     <ul class="list-group">
                     <li class="clearfix lead list-group-item">
@@ -71,22 +87,24 @@
             <div class="col-md-6 col-xs-12"><div class="panel panel-default">
                 <div class="panel-heading">
                     <h3>All known origins</h3>
-                    <h4><span class="label label-info"># {{ stats.num_not_found + stats.num_valid + stats.num_invalid_as + stats.num_invalid_len }}</span></h4>
+                    <h4><span class="label label-primary"># {{ stats.num_not_found + stats.num_valid + stats.num_invalid_as + stats.num_invalid_len }}</span></h4>
                 </div>
                 <div class="panel-body">
                     <p></p>
                 </div>
                 <div id="piechart_all"></div>
+                <div id="linechart_all"></div>
             </div></div>
             <div class="col-md-6 col-xs-12"><div class="panel panel-default">
                 <div class="panel-heading">
                     <h3>Origins with ROA</h3>
-                    <h4><span class="label label-info"># {{stats.num_valid + stats.num_invalid_as + stats.num_invalid_len }}</span></h4>
+                    <h4><span class="label label-primary"># {{stats.num_valid + stats.num_invalid_as + stats.num_invalid_len }}</span></h4>
                 </div>
                 <div class="panel-body">
                     <p></p>
                 </div>
-                <div id="piechart_val"></div>
+                <div id="piechart_roa"></div>
+                <div id="linechart_roa"></div>
             </div></div>
         </div>
 {% endblock %}
