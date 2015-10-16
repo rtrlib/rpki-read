@@ -1,10 +1,12 @@
+import codecs
 import json
 import logging
+import markdown
 import sys
 import socket
 
 from netaddr import IPNetwork, IPAddress
-from flask import render_template
+from flask import render_template, Markup
 from app import app
 
 import config
@@ -27,7 +29,10 @@ def _get_table_json(state):
 ## about page handler
 @app.route('/about')
 def about():
-    return render_template("about.html")
+    md_file = codecs.open("../README.md", mode="r", encoding="utf-8")
+    md_text = md_file.read()
+    content = Markup(markdown.markdown(md_text))
+    return render_template("about.html", content=content)
 
 ## stats handler
 @app.route('/')
