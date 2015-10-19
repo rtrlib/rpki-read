@@ -9,8 +9,38 @@
 
         var pdata_all = google.visualization.arrayToDataTable({{ stats.table_all|tojson }});
         var pdata_roa = google.visualization.arrayToDataTable({{ stats.table_roa|tojson }});
-        var ldata_all = google.visualization.arrayToDataTable({{ stats.stats_all|tojson }});
-        var ldata_roa = google.visualization.arrayToDataTable({{ stats.stats_roa|tojson }});
+
+        var ldata_all = new google.visualization.DataTable();
+        ldata_all.addColumn('datetime', 'Timestamp');
+        ldata_all.addColumn('number', 'Valid');
+        ldata_all.addColumn('number', 'Invalid Length');
+        ldata_all.addColumn('number', 'Invalid AS');
+        ldata_all.addColumn('number', 'Not Found');
+        ldata_all_json = {{ stats.stats_all|tojson }}
+        $.each(ldata_all_json, function(i,row) {
+            ldata_all.addRow([
+                (new Date(row.ts*1000)),
+                parseInt(row.num_valid),
+                parseInt(row.num_invalid_len),
+                parseInt(row.num_invalid_as),
+                parseInt(row.num_not_found)
+            ]);
+        });
+
+        var ldata_roa = new google.visualization.DataTable();
+        ldata_roa.addColumn('datetime', 'Timestamp');
+        ldata_roa.addColumn('number', 'Valid');
+        ldata_roa.addColumn('number', 'Invalid Length');
+        ldata_roa.addColumn('number', 'Invalid AS');
+        ldata_roa_json = {{ stats.stats_roa|tojson }}
+        $.each(ldata_roa_json, function(i,row) {
+            ldata_roa.addRow([
+                (new Date(row.ts*1000)),
+                parseInt(row.num_valid),
+                parseInt(row.num_invalid_len),
+                parseInt(row.num_invalid_as)
+            ]);
+        });
 
         var popts_all = {
             title: 'Overall Validation Results',
@@ -34,12 +64,26 @@
           chartArea:{left:0,top:10,width:'100%',height:'100%'}
         };
         var lopts_all = {
-            title: 'Statistics over time',
-            curveType: 'function',
-            legend: {position: 'bottom'}
-
+            hAxis:{format: 'yy/MM/dd\nHH:mm'},
+            series: {
+                0: { color: '#33a02c' },
+                1: { color: '#ff7f00' },
+                2: { color: '#e31a1c' },
+                3: { color: '#888888' }
+            },
+            legend:{position: 'top'},
+            chartArea:{left:'10%',top:'10%',width:'85%',height:'70%'}
         };
-        var lopts_roa = {};
+        var lopts_roa = {
+            hAxis:{format: 'yy/MM/dd\nHH:mm'},
+            series: {
+                0: { color: '#33a02c' },
+                1: { color: '#ff7f00' },
+                2: { color: '#e31a1c' }
+            },
+            legend:{position: 'top'},
+            chartArea:{left:'10%',top:'10%',width:'85%',height:'70%'}
+        };
 
         var pchart_all = new google.visualization.PieChart(document.getElementById('piechart_all'));
         var pchart_roa = new google.visualization.PieChart(document.getElementById('piechart_roa'));

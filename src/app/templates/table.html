@@ -18,16 +18,16 @@
                 html_dropdown += '<span>'+value.matched[m].prefix+' - '+value.matched[m].max_length+', '+value.matched[m].asn+'</span>';
                 html_dropdown += '</li>';
             }
-            html_dropdown += '<li class="dropdown-header">unmatched AS</li>';
-            for (m in value.unmatched_as) {
-                html_dropdown += '<li>';
-                html_dropdown += '<span>'+value.unmatched_as[m].prefix+' - '+value.unmatched_as[m].max_length+', '+value.unmatched_as[m].asn+'</span>';
-                html_dropdown += '</li>';
-            }
             html_dropdown += '<li class="dropdown-header">unmatched Length</li>';
             for (m in value.unmatched_length) {
                 html_dropdown += '<li>';
                 html_dropdown += '<span>'+value.unmatched_length[m].prefix+' - '+value.unmatched_length[m].max_length+', '+value.unmatched_length[m].asn+'</span>';
+                html_dropdown += '</li>';
+            }
+            html_dropdown += '<li class="dropdown-header">unmatched AS</li>';
+            for (m in value.unmatched_as) {
+                html_dropdown += '<li>';
+                html_dropdown += '<span>'+value.unmatched_as[m].prefix+' - '+value.unmatched_as[m].max_length+', '+value.unmatched_as[m].asn+'</span>';
                 html_dropdown += '</li>';
             }
             html_dropdown += '</ul></div>';
