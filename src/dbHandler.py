@@ -84,10 +84,6 @@ def main():
         else:
             queue.put(data)
             logging.info ("output queue size: " + str(queue.qsize()))
-            if (queue.qsize() > 100000):
-                logging.warning ("output queue size exceeds threshold, restart output thread!")
-                output_p.terminate()
-                output_p.start()
 
 if __name__ == "__main__":
     main()

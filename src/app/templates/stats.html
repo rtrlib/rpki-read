@@ -8,7 +8,8 @@
       function drawChart() {
 
         var pdata_all = google.visualization.arrayToDataTable({{ stats.table_all|tojson }});
-        var pdata_roa = google.visualization.arrayToDataTable({{ stats.table_roa|tojson }});
+        var pview_roa = new google.visualization.DataView(pdata_all);
+        pview_roa.hideRows([3]); // skip row with NotFound
 
         var ldata_all = new google.visualization.DataTable();
         ldata_all.addColumn('datetime', 'Timestamp');
@@ -27,23 +28,11 @@
             ]);
         });
 
-        var ldata_roa = new google.visualization.DataTable();
-        ldata_roa.addColumn('datetime', 'Timestamp');
-        ldata_roa.addColumn('number', 'Valid');
-        ldata_roa.addColumn('number', 'Invalid Length');
-        ldata_roa.addColumn('number', 'Invalid AS');
-        ldata_roa_json = {{ stats.stats_roa|tojson }}
-        $.each(ldata_roa_json, function(i,row) {
-            ldata_roa.addRow([
-                (new Date(row.ts*1000)),
-                parseInt(row.num_valid),
-                parseInt(row.num_invalid_len),
-                parseInt(row.num_invalid_as)
-            ]);
-        });
+        var lview_roa = new google.visualization.DataView(ldata_all);
+        lview_roa.setColumns([0,1,2,3]); // skip column with NotFound
 
         var popts_all = {
-            title: 'Overall Validation Results',
+            legend:{position: 'left'},
             slices: {
                 0: { color: '#33a02c' },
                 1: { color: '#ff7f00' },
@@ -51,17 +40,17 @@
                 3: { color: '#888888' }
             },
             is3D: true,
-            chartArea:{left:0,top:10,width:'100%',height:'100%'}
+            chartArea:{left:'5%',top:'5%',width:'90%',height:'95%'}
         };
         var popts_roa = {
-          title: 'Validation States',
-          slices: {
-              0: { color: '#33a02c' },
-              1: { color: '#ff7f00' },
-              2: { color: '#e31a1c' }
-          },
-          is3D: true,
-          chartArea:{left:0,top:10,width:'100%',height:'100%'}
+            legend:{position: 'left'},
+            slices: {
+                0: { color: '#33a02c' },
+                1: { color: '#ff7f00' },
+                2: { color: '#e31a1c' }
+            },
+            is3D: true,
+            chartArea:{left:'5%',top:'5%',width:'90%',height:'95%'}
         };
         var lopts_all = {
             hAxis:{format: 'yy/MM/dd\nHH:mm'},
@@ -72,7 +61,7 @@
                 3: { color: '#888888' }
             },
             legend:{position: 'top'},
-            chartArea:{left:'10%',top:'10%',width:'85%',height:'70%'}
+            chartArea:{left:'15%',top:'10%',width:'80%',height:'70%'}
         };
         var lopts_roa = {
             hAxis:{format: 'yy/MM/dd\nHH:mm'},
@@ -82,7 +71,7 @@
                 2: { color: '#e31a1c' }
             },
             legend:{position: 'top'},
-            chartArea:{left:'10%',top:'10%',width:'85%',height:'70%'}
+            chartArea:{left:'15%',top:'10%',width:'80%',height:'70%'}
         };
 
         var pchart_all = new google.visualization.PieChart(document.getElementById('piechart_all'));
@@ -91,9 +80,9 @@
         var lchart_roa = new google.visualization.LineChart(document.getElementById('linechart_roa'));
 
         pchart_all.draw(pdata_all, popts_all);
-        pchart_roa.draw(pdata_roa, popts_roa);
+        pchart_roa.draw(pview_roa, popts_roa);
         lchart_all.draw(ldata_all, lopts_all);
-        lchart_roa.draw(ldata_roa, lopts_roa);
+        lchart_roa.draw(lview_roa, lopts_roa);
 
       }
     </script>
@@ -135,9 +124,11 @@
                 </div>
                 <div class="panel-body">
                     <p></p>
+                    <h4>Relative validation results</h4>
+                    <div id="piechart_all"></div>
+                    <h4>Last 24 hours</h4>
+                    <div id="linechart_all"></div>
                 </div>
-                <div id="piechart_all"></div>
-                <div id="linechart_all"></div>
             </div></div>
             <div class="col-md-6 col-xs-12"><div class="panel panel-default">
                 <div class="panel-heading">
@@ -146,9 +137,11 @@
                 </div>
                 <div class="panel-body">
                     <p></p>
+                    <h4>Relative validation results</h4>
+                    <div id="piechart_roa"></div>
+                    <h4>Last 24 hours</h4>
+                    <div id="linechart_roa"></div>
                 </div>
-                <div id="piechart_roa"></div>
-                <div id="linechart_roa"></div>
             </div></div>
         </div>
 {% endblock %}

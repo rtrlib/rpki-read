@@ -45,13 +45,6 @@ def output_data(dbconnstr, queue, dropdata, keepdata):
         data = queue.get()
         if (data == 'DONE'):
             break
-        if keepdata:
-            logging.debug("keepdata, insert " +data['type']+ " prefix: " +data['prefix'])
-            try:
-                result = db.archive.insert_one(data).inserted_id
-                logging.debug ("inserted_id: " +str(result))
-            except Exception, e:
-                logging.exception ("insert entry, failed with: %s ", e.message)
         if data['type'] == 'announcement':
             logging.debug ("process announcement")
             try:
@@ -74,3 +67,11 @@ def output_data(dbconnstr, queue, dropdata, keepdata):
         else:
             logging.warning ("Type not supported, must be either announcement or withdraw!")
             continue
+        if keepdata:
+            data['archive'] = True
+            logging.debug("keepdata, insert " +data['type']+ " for prefix: " +data['prefix'])
+            try:
+                archive_id = db.archive.insert_one(data).inserted_id
+                logging.debug ("inserted_id: " +str(archive_id))
+            except Exception, e:
+                logging.exception ("insert entry, failed with: %s ", e.message)
