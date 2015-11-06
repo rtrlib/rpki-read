@@ -2,7 +2,10 @@ import logging
 import time
 
 from datetime import datetime
+from math import sqrt
 from pymongo import MongoClient
+from settings import max_timeout
+MAX_BULK_OPS = 987
 
 def output_stat(dbconnstr, interval):
     logging.debug ("CALL output_stat mongodb, with" +dbconnstr)
@@ -12,7 +15,6 @@ def output_stat(dbconnstr, interval):
 
     client = MongoClient(dbconnstr)
     db = client.get_default_database()
-
     while True:
         stats = dict()
         stats['ts'] = 'now'
@@ -40,7 +42,12 @@ def output_data(dbconnstr, queue, dropdata, keepdata):
     db = client.get_default_database()
     if dropdata:
         db.validity.drop()
+        db.archive.drop()
     # end dropdata
+    vbulk = db.validity.initialize_ordered_bulk_op()
+    abulk = db.archive.initialize_ordered_bulk_op()
+    bulk_len = 0
+    begin = datetime.now()
     while True:
         data = queue.get()
         if (data == 'DONE'):
@@ -49,29 +56,50 @@ def output_data(dbconnstr, queue, dropdata, keepdata):
             logging.debug ("process announcement")
             try:
                 logging.debug ("insert or replace prefix: " + data['validated_route']['route']['prefix'])
-                result = db.validity.replace_one(
-                    { 'validated_route.route.prefix' : data['validated_route']['route']['prefix'] },
-                    data, True
-                )
-                logging.debug("# matched: " + str(result.matched_count))
+                vbulk.find({ 'validated_route.route.prefix' : data['validated_route']['route']['prefix'] }).upsert().replace_one(data)
             except Exception, e:
-                logging.exception ("update or insert entry, failed with: %s ", e.message)
+                logging.exception ("bulk update or insert entry, failed with: %s ", e.message)
+            else:
+                bulk_len += 1
         elif (data['type'] == 'withdraw'):
             logging.debug ("process withdraw")
             try:
                 logging.debug("delete prefix if exists: " + data['prefix'] )
-                result = db.validity.delete_one({ 'validated_route.route.prefix' : data['prefix'] })
-                logging.debug("# deleted: " + str(result.deleted_count))
+                vbulk.find({ 'validated_route.route.prefix' : data['prefix'] }).remove()
             except Exception, e:
-                logging.exception ("delete entry, failed with: %s" , e.message)
+                logging.exception ("bulk delete entry, failed with: %s" , e.message)
+            else:
+                bulk_len += 1
         else:
             logging.warning ("Type not supported, must be either announcement or withdraw!")
             continue
+
+        # archive data?
         if keepdata:
-            data['archive'] = True
-            logging.debug("keepdata, insert " +data['type']+ " for prefix: " +data['prefix'])
+            adata = data.copy()
+            adata['archive'] = True
+            logging.debug("keepdata, insert " +adata['type']+ " for prefix: " +adata['prefix'])
             try:
-                archive_id = db.archive.insert_one(data).inserted_id
-                logging.debug ("inserted_id: " +str(archive_id))
+                abulk.insert(adata)
             except Exception, e:
-                logging.exception ("insert entry, failed with: %s ", e.message)
+                logging.exception ("archive entry, failed with: %s ", e.message)
+            else:
+                bulk_len += 1
+        # end keepdata
+
+        now = datetime.now()
+        timeout = begin - now
+        # exec bulk validity
+        if (bulk_len > MAX_BULK_OPS) or (timeout.seconds > max_timeout):
+            try:
+                vbulk.execute()
+                if keepdata:
+                    abulk.execute()
+            except Exception, e:
+                logging.exception ("bulk operation, failed with: %s" , e.message)
+            finally:
+                vbulk = db.validity.initialize_ordered_bulk_op()
+                bulk_len = 0
+                if keepdata:
+                    abulk = db.archive.initialize_ordered_bulk_op()
+            begin = datetime.now()

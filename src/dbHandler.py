@@ -75,6 +75,7 @@ def main():
                                 args=(dbconnstr,args['interval']))
     output_stat_p.start()
     # main loop
+    counter = 0
     while True:
         line = sys.stdin.readline().strip()
         try:
@@ -83,7 +84,10 @@ def main():
             logging.exception ("Failed to parse JSON from input.")
         else:
             queue.put(data)
+        counter += 1
+        if counter > max_counter:
             logging.info ("output queue size: " + str(queue.qsize()))
+            counter = 0
 
 if __name__ == "__main__":
     main()
