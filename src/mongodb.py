@@ -1,7 +1,7 @@
 import logging
 import time
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from math import sqrt
 from pymongo import MongoClient
 from settings import max_timeout
@@ -23,12 +23,13 @@ def output_stat(dbconnstr, interval):
         stats['num_invalid_len'] = 0
         stats['num_not_found'] = 0
         try:
-            stats['num_valid'] = db.validity.find({'validated_route.validity.state' : 'Valid' }).count()
-            stats['num_invalid_as'] = db.validity.find({'validated_route.validity.state' : 'InvalidAS' }).count()
-            stats['num_invalid_len'] = db.validity.find({'validated_route.validity.state' : 'InvalidLength' }).count()
-            stats['num_not_found'] = db.validity.find({'validated_route.validity.state' : 'NotFound' }).count()
-            ts_tmp = db.validity.find_one(projection={'timestamp': True, '_id': False}, sort=[('timestamp', -1)])['timestamp']
-            stats['ts'] = int(ts_tmp)
+            if "validity" in db.collection_names() and db.validity.count() > 0:
+                stats['num_valid'] = db.validity.find({'validated_route.validity.state' : 'Valid' }).count()
+                stats['num_invalid_as'] = db.validity.find({'validated_route.validity.state' : 'InvalidAS' }).count()
+                stats['num_invalid_len'] = db.validity.find({'validated_route.validity.state' : 'InvalidLength' }).count()
+                stats['num_not_found'] = db.validity.find({'validated_route.validity.state' : 'NotFound' }).count()
+                ts_tmp = db.validity.find_one(projection={'timestamp': True, '_id': False}, sort=[('timestamp', -1)])['timestamp']
+                stats['ts'] = int(ts_tmp)
         except Exception, e:
             logging.exception ("QUERY failed with: " + e.message)
         else:
@@ -88,9 +89,11 @@ def output_data(dbconnstr, queue, dropdata, keepdata):
         # end keepdata
 
         now = datetime.now()
-        timeout = begin - now
+        timeout = now - begin
         # exec bulk validity
-        if (bulk_len > MAX_BULK_OPS) or (timeout.seconds > max_timeout):
+        if (bulk_len > MAX_BULK_OPS) or (timeout.total_seconds() > max_timeout):
+            begin = datetime.now()
+            logging.info ("do mongo bulk operation ...")
             try:
                 vbulk.execute()
                 if keepdata:
@@ -102,4 +105,3 @@ def output_data(dbconnstr, queue, dropdata, keepdata):
                 bulk_len = 0
                 if keepdata:
                     abulk = db.archive.initialize_ordered_bulk_op()
-            begin = datetime.now()
