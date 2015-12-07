@@ -43,6 +43,7 @@ def output_data(dbconnstr, queue, dropdata, keepdata):
     db = client.get_default_database()
     if dropdata:
         db.validity.drop()
+        db.validity_stats.drop()
         db.archive.drop()
     # end dropdata
     vbulk = db.validity.initialize_ordered_bulk_op()
