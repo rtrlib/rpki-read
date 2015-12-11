@@ -4,8 +4,7 @@ import time
 from datetime import datetime, timedelta
 from math import sqrt
 from pymongo import MongoClient
-from settings import max_timeout
-MAX_BULK_OPS = 987
+from settings import MAX_TIMEOUT, MAX_BULK_OPS
 
 def output_stat(dbconnstr, interval):
     logging.debug ("CALL output_stat mongodb, with" +dbconnstr)
@@ -77,7 +76,7 @@ def output_data(dbconnstr, queue, dropdata, keepdata):
             continue
 
         # archive data?
-        if keepdata:
+        if (keepdata) and (data['validated_route']['validity']['state'] != 'NotFound'):
             adata = data.copy()
             adata['archive'] = True
             logging.debug("keepdata, insert " +adata['type']+ " for prefix: " +adata['prefix'])
@@ -92,13 +91,13 @@ def output_data(dbconnstr, queue, dropdata, keepdata):
         now = datetime.now()
         timeout = now - begin
         # exec bulk validity
-        if (bulk_len > MAX_BULK_OPS) or (timeout.total_seconds() > max_timeout):
+        if (bulk_len > MAX_BULK_OPS) or (timeout.total_seconds() > MAX_TIMEOUT):
             begin = datetime.now()
             logging.info ("do mongo bulk operation ...")
             try:
-                vbulk.execute()
+                vbulk.execute({'w': 0})
                 if keepdata:
-                    abulk.execute()
+                    abulk.execute({'w': 0})
             except Exception, e:
                 logging.exception ("bulk operation, failed with: %s" , e.message)
             finally:

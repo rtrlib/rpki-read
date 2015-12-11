@@ -85,7 +85,7 @@ def main():
         else:
             queue.put(data)
         counter += 1
-        if counter > max_counter:
+        if counter > MAX_COUNTER:
             logging.info ("output queue size: " + str(queue.qsize()))
             counter = 0
 
