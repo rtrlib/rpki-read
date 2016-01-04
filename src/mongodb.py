@@ -47,7 +47,8 @@ def output_data(dbconnstr, queue, dropdata, keepdata):
     # end dropdata
     vbulk = db.validity.initialize_ordered_bulk_op()
     abulk = db.archive.initialize_ordered_bulk_op()
-    bulk_len = 0
+    vbulk_len = 0
+    abulk_len = 0
     begin = datetime.now()
     while True:
         data = queue.get()
@@ -61,7 +62,7 @@ def output_data(dbconnstr, queue, dropdata, keepdata):
             except Exception, e:
                 logging.exception ("bulk update or insert entry, failed with: %s ", e.message)
             else:
-                bulk_len += 1
+                vbulk_len += 1
         elif (data['type'] == 'withdraw'):
             logging.debug ("process withdraw")
             try:
@@ -70,13 +71,16 @@ def output_data(dbconnstr, queue, dropdata, keepdata):
             except Exception, e:
                 logging.exception ("bulk delete entry, failed with: %s" , e.message)
             else:
-                bulk_len += 1
+                vbulk_len += 1
         else:
             logging.warning ("Type not supported, must be either announcement or withdraw!")
             continue
 
         # archive data?
-        if (keepdata) and (data['validated_route']['validity']['state'] != 'NotFound'):
+        if (keepdata) and \
+                (data['type'] == 'announcement') and \
+                ('validated_route' in data.keys()) and \
+                (data['validated_route']['validity']['state'] != 'NotFound'):
             adata = data.copy()
             adata['archive'] = True
             logging.debug("keepdata, insert " +adata['type']+ " for prefix: " +adata['prefix'])
@@ -85,23 +89,23 @@ def output_data(dbconnstr, queue, dropdata, keepdata):
             except Exception, e:
                 logging.exception ("archive entry, failed with: %s ", e.message)
             else:
-                bulk_len += 1
+                abulk_len += 1
         # end keepdata
 
         now = datetime.now()
         timeout = now - begin
         # exec bulk validity
-        if (bulk_len > MAX_BULK_OPS) or (timeout.total_seconds() > MAX_TIMEOUT):
+        if ((abulk_len + vbulk_len) > MAX_BULK_OPS) or (timeout.total_seconds() > MAX_TIMEOUT):
             begin = datetime.now()
             logging.info ("do mongo bulk operation ...")
             try:
                 vbulk.execute({'w': 0})
-                if keepdata:
+                if abulk_len > 0:
                     abulk.execute({'w': 0})
             except Exception, e:
                 logging.exception ("bulk operation, failed with: %s" , e.message)
             finally:
+                abulk = db.archive.initialize_ordered_bulk_op()
+                abulk_len = 0
                 vbulk = db.validity.initialize_ordered_bulk_op()
-                bulk_len = 0
-                if keepdata:
-                    abulk = db.archive.initialize_ordered_bulk_op()
+                vbulk_len = 0
