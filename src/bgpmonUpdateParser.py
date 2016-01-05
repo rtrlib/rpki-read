@@ -94,19 +94,59 @@ def parse_bgp_message(xml):
 
     return bgp_message
 
-def recv_bgpmon_messages(host,port, queue):
+def recv_bgpmon_rib(host, port, queue):
+    logging.info ("CALL recv_bgpmon_rib (%s:%d)", host, port)
+    # open connection
+    sock =  socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        sock.connect((host,port))
+    except:
+        logging.critical ("Failed to connect to BGPmon XML RIB stream!")
+        sys.exit(1)
+
+    data = ""
+    stream = ""
+    # receive data
+    run = True
+    parse = False
+    logging.info("receiving XML RIB stream ...")
+    while(run):
+        data = sock.recv(1024)
+        stream += data
+        stream = string.replace(stream, "<xml>", "")
+        while (re.search('</BGP_MONITOR_MESSAGE>', stream)):
+            messages = stream.split('</BGP_MONITOR_MESSAGE>')
+            msg = messages[0] + '</BGP_MONITOR_MESSAGE>'
+            if re.search('TABLE_STOP', msg):
+                logging.info("found TABLE_STOP in XML RIB stream.")
+                parse = False
+                run = False
+                break
+            stream = '</BGP_MONITOR_MESSAGE>'.join(messages[1:])
+            if parse:
+                result = parse_bgp_message(msg)
+                if result:
+                    queue.put(result)
+            if re.search('TABLE_START', msg):
+                logging.info("found TABLE_START in XML RIB stream.")
+                parse = True
+
+    return True
+
+def recv_bgpmon_messages(host, port, queue):
     logging.info ("CALL recv_bgpmon_updates (%s:%d)", host, port)
     # open connection
     sock =  socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         sock.connect((host,port))
     except:
-        logging.critical ("Failed to connect to BGPmon!")
+        logging.critical ("Failed to connect to BGPmon XML update stream!")
         sys.exit(1)
 
     data = ""
     stream = ""
     # receive data
+    logging.info("receiving XML update stream ...")
     while(True):
         data = sock.recv(1024)
         stream += data
@@ -138,10 +178,13 @@ def main():
                         type=str, default='WARNING')
     parser.add_argument('-a', '--addr',
                         help='Address or name of BGPmon host.',
-                        default=default_bgpmon_server['host'])
+                        type=str, default=default_bgpmon_server['host'])
     parser.add_argument('-p', '--port',
                         help='Port of BGPmon Update XML stream.',
-                        default=default_bgpmon_server['port'], type=int)
+                        type=int, default=default_bgpmon_server['port'])
+    parser.add_argument('-r', '--ribport',
+                        help='Port of BGPmon RIB XML stream.',
+                        type=int, default=0)
     args = vars(parser.parse_args())
 
     numeric_level = getattr(logging, args['loglevel'].upper(), None)
@@ -160,6 +203,8 @@ def main():
                     args=(output_queue,))
     try:
         ot.start()
+        if args['ribport']:
+            recv_bgpmon_rib(addr, args['ribport'], output_queue)
         recv_bgpmon_messages(addr,port,output_queue)
     except KeyboardInterrupt:
         logging.exception ("ABORT")
