@@ -1,8 +1,8 @@
 # Setting up LBV
 
 Deploying the LBV monitoring system is straight forward and easy, you can run
-backend and frontend on a single server or separatly on distinct nodes (+ a node
-for the database, if you want). We recommend using _virtualenv_ with Pyhton and
+backend and frontend on a single server or separately on distinct nodes (+ a node
+for the database, if you want). We recommend using _virtualenv_ with Python and
 to use _pip_ to install required libraries within this environment to keep your
 local systems Python installation untouched.
 
@@ -35,7 +35,7 @@ And you will also need the URL of a RPKI cache for the validation procedure.
 
 ### run
 
-To the backend process run the following command chain, replace respective
+For the backend process run the following command chain, replace respective
 addresses and ports as needed:
 
 ```
@@ -45,6 +45,13 @@ python dbHandler.py -m <mongodb-URI>
 ```
 
 A mongodb-URI looks something like `mongodb://<host>:<port>/<dbname>`.
+To configure the backend have a look at the [settings](src/settings.py).
+
+The 'bgpmonUpdateParser' also supports to read the _RIB_ XML stream of a bgpmon
+instance first, before it starts to parse the BGP update stream. This way you
+fill the database with all currently known IP prefixes and their origin AS,
+including validation. To activate and use this feature specify the RIB XML
+stream port using the additional '-r <rib port>' parameter.
 
 ## frontend
 
@@ -66,3 +73,6 @@ afterwards exec:
 ```
 python webfrontend.py
 ```
+
+The webfrontend runs on port 'localhost:5000' you may alter the port or setup
+a webproxy (e.g. 'nginx') to redirect traffic.
