@@ -15,6 +15,7 @@ from datetime import datetime
 from subprocess import PIPE, Popen
 
 # internal imports
+from mongodb import output_data, output_stat
 from settings import *
 
 def main():
@@ -22,22 +23,15 @@ def main():
     parser.add_argument('-d', '--dropdata',
                         help='Drop/delete all existing data in the database.',
                         action='store_true', default=False)
-    parser.add_argument('-k', '--keepdata',
-                        help='Keep all data, never replace anything.',
-                        action='store_true', default=False)
     parser.add_argument('-l', '--loglevel',
                         help='Set loglevel [DEBUG,INFO,WARNING,ERROR,CRITICAL].',
                         type=str, default='WARNING')
     parser.add_argument('-i', '--interval',
                         help='Set timeout interval for stats, default: 60s.',
                         type=int, default=60)
-    db = parser.add_mutually_exclusive_group(required=True)
-    db.add_argument(    '-m', '--mongodb',
+    parser.add_argument('-m', '--mongodb',
                         help='MongoDB connection parameters.',
-                        default=False)
-    db.add_argument(    '-p', '--postgres',
-                        help='PostgreSQL connection parameters.',
-                        default=False)
+                        type=str, required=True)
 
     args = vars(parser.parse_args())
 
@@ -51,18 +45,10 @@ def main():
     dbconnstr = None
     # BEGIN
     logging.info("START")
-    if args['mongodb']:
-        logging.info("database: MongoDB")
-        from mongodb import output_data, output_stat
-        dbconnstr = args['mongodb'].strip()
-
-    elif args['postgres']:
-        logging.info("database: PostgreSQL")
-        from postgresql import output_data, output_stat
-        dbconnstr = args['postgres'].strip()
+    dbconnstr = args['mongodb'].strip()
 
     output_data_p = mp.Process( target=output_data,
-                                args=(dbconnstr,queue,args['dropdata'],args['keepdata']))
+                                args=(dbconnstr,queue,args['dropdata']))
     output_data_p.start()
 
     output_stat_p = mp.Process( target=output_stat,

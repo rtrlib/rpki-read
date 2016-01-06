@@ -1,5 +1,0 @@
-flask
-markdown
-netaddr
-pymongo
-psycopg2

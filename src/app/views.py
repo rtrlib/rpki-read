@@ -5,6 +5,7 @@ import markdown
 import sys
 import socket
 
+from apscheduler.schedulers.background import BackgroundScheduler
 from netaddr import IPNetwork, IPAddress
 from flask import render_template, Markup
 from app import app
@@ -17,6 +18,20 @@ elif config.DATABASE_TYPE == 'postgresql':
 else:
     logging.critical("unknown database type!")
     sys.exit(1)
+
+g_stats = dict()
+
+def update_validation_stats():
+    global g_stats
+    g_stats = get_validation_stats(config.DATABASE_CONN)
+
+@app.before_first_request
+def initialize():
+    update_validation_stats()
+    apsched = BackgroundScheduler()
+    update_validation_stats()
+    apsched.add_job(update_validation_stats, 'interval', seconds=23)
+    apsched.start()
 
 def _get_table_json(state):
     dlist = get_list(config.DATABASE_CONN, state)
@@ -38,16 +53,17 @@ def about():
 @app.route('/')
 @app.route('/stats')
 def stats():
-    stats = get_validation_stats(config.DATABASE_CONN)
+    #stats = get_validation_stats(config.DATABASE_CONN)
+    l_stats = g_stats.copy()
     table = [['Validity', 'Count']]
-    table.append([ 'Valid', stats['num_valid'] ])
-    table.append([ 'Invalid Length', stats['num_invalid_len'] ])
-    table.append([ 'Invalid AS', stats['num_invalid_as'] ])
-    stats['table_roa'] = table
+    table.append([ 'Valid', l_stats['num_Valid'] ])
+    table.append([ 'Invalid Length', l_stats['num_InvalidLength'] ])
+    table.append([ 'Invalid AS', l_stats['num_InvalidAS'] ])
+    l_stats['table_roa'] = table
     table_all = list(table)
-    table_all.append([ 'Not Found', stats['num_not_found'] ])
-    stats['table_all'] = table_all
-    return render_template("stats.html", stats=stats)
+    table_all.append([ 'Not Found', l_stats['num_NotFound'] ])
+    l_stats['table_all'] = table_all
+    return render_template("stats.html", stats=l_stats)
 
 ## table handler
 @app.route('/valid')

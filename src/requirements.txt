@@ -1,3 +1,5 @@
+flask
+APScheduler
+markdown
 netaddr
-psycopg2
 pymongo

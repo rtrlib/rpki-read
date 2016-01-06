@@ -21,10 +21,10 @@
         $.each(ldata_all_json, function(i,row) {
             ldata_all.addRow([
                 (new Date(row.ts*1000)),
-                parseInt(row.num_valid),
-                parseInt(row.num_invalid_len),
-                parseInt(row.num_invalid_as),
-                parseInt(row.num_not_found)
+                parseInt(row.num_Valid),
+                parseInt(row.num_InvalidLength),
+                parseInt(row.num_InvalidAS),
+                parseInt(row.num_NotFound)
             ]);
         });
 
@@ -97,19 +97,19 @@
                     </div>
                     <ul class="list-group">
                     <li class="clearfix lead list-group-item">
-                        <span class="label label-default"># {{ stats.num_not_found }}</span>
+                        <span class="label label-default"># {{ stats.num_NotFound }}</span>
                         <span class="pull-right">Not Found</span>
                     </li>
                     <li class="clearfix lead list-group-item">
-                        <span class="label label-success"># {{ stats.num_valid }}</span>
+                        <span class="label label-success"># {{ stats.num_Valid }}</span>
                         <span class="pull-right">Valid</span>
                     </li>
                     <li class="clearfix lead list-group-item">
-                        <span class="label label-warning"># {{ stats.num_invalid_len }}</span>
+                        <span class="label label-warning"># {{ stats.num_InvalidLength }}</span>
                         <span class="pull-right">Invalid Length</span>
                     </li>
                     <li class="clearfix lead list-group-item">
-                        <span class="label label-danger"># {{ stats.num_invalid_as }}</span>
+                        <span class="label label-danger"># {{ stats.num_InvalidAS }}</span>
                         <span class="pull-right">Invalid AS</span>
                     </li>
                     </ul>
@@ -120,7 +120,7 @@
             <div class="col-md-6 col-xs-12"><div class="panel panel-default">
                 <div class="panel-heading">
                     <h3>All known origins</h3>
-                    <h4><span class="label label-primary"># {{ stats.num_not_found + stats.num_valid + stats.num_invalid_as + stats.num_invalid_len }}</span></h4>
+                    <h4><span class="label label-primary"># {{ stats.num_NotFound + stats.num_Valid + stats.num_InvalidAS + stats.num_InvalidLength }}</span></h4>
                 </div>
                 <div class="panel-body">
                     <p></p>
@@ -133,7 +133,7 @@
             <div class="col-md-6 col-xs-12"><div class="panel panel-default">
                 <div class="panel-heading">
                     <h3>Origins with ROA</h3>
-                    <h4><span class="label label-primary"># {{stats.num_valid + stats.num_invalid_as + stats.num_invalid_len }}</span></h4>
+                    <h4><span class="label label-primary"># {{ stats.num_Valid + stats.num_InvalidAS + stats.num_InvalidLength }}</span></h4>
                 </div>
                 <div class="panel-body">
                     <p></p>

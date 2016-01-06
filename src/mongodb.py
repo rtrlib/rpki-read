@@ -1,6 +1,7 @@
 import logging
 import time
 
+from bson.son import SON
 from datetime import datetime, timedelta
 from math import sqrt
 from pymongo import MongoClient
@@ -19,16 +20,21 @@ def output_stat(dbconnstr, interval):
     while True:
         stats = dict()
         stats['ts'] = 'now'
-        stats['num_valid'] = 0
-        stats['num_invalid_as'] = 0
-        stats['num_invalid_len'] = 0
-        stats['num_not_found'] = 0
+        stats['num_Valid'] = 0
+        stats['num_InvalidAS'] = 0
+        stats['num_InvalidLength'] = 0
+        stats['num_NotFound'] = 0
         try:
             if "validity" in db.collection_names() and db.validity.count() > 0:
-                stats['num_valid'] = db.validity.find({'validated_route.validity.state' : 'Valid' }).count()
-                stats['num_invalid_as'] = db.validity.find({'validated_route.validity.state' : 'InvalidAS' }).count()
-                stats['num_invalid_len'] = db.validity.find({'validated_route.validity.state' : 'InvalidLength' }).count()
-                stats['num_not_found'] = db.validity.find({'validated_route.validity.state' : 'NotFound' }).count()
+                pipeline = [
+                    { "$match": { 'type' : 'announcement' } },
+                    { "$sort": SON( [ ( "prefix", 1), ("timestamp", -1 ) ] ) },
+                    { "$group": { "_id": "$prefix", "timestamp": { "$first": "$timestamp" }, "validity": { "$first": "$validated_route.validity.state"} } },
+                    { "$group": { "_id": "$validity", "count": { "$sum": 1} } }
+                ]
+                results = list(db.validity.aggregate( pipeline ))
+                for i in range(0,len(results)):
+                    stats["num_"+results[i]['_id']] = results[i]['count']
                 ts_tmp = db.validity.find_one(projection={'timestamp': True, '_id': False}, sort=[('timestamp', -1)])['timestamp']
                 stats['ts'] = int(ts_tmp)
         except Exception, e:
@@ -38,7 +44,7 @@ def output_stat(dbconnstr, interval):
                 db.validity_stats.insert_one(stats)
         time.sleep(interval)
 
-def output_data(dbconnstr, queue, dropdata, keepdata):
+def output_data(dbconnstr, queue, dropdata):
     """Store validation results into database"""
     logging.debug ("CALL output_data mongodb, with" +dbconnstr)
     client = MongoClient(dbconnstr)
@@ -46,69 +52,36 @@ def output_data(dbconnstr, queue, dropdata, keepdata):
     if dropdata:
         db.validity.drop()
         db.validity_stats.drop()
-        db.archive.drop()
     # end dropdata
-    vbulk = db.validity.initialize_ordered_bulk_op()
-    abulk = db.archive.initialize_ordered_bulk_op()
-    vbulk_len = 0
-    abulk_len = 0
+    bulk = db.validity.initialize_unordered_bulk_op()
+    bulk_len = 0
     begin = datetime.now()
     while True:
         data = queue.get()
         if (data == 'DONE'):
             break
-        if data['type'] == 'announcement':
-            logging.debug ("process announcement")
+        if (data['type'] == 'announcement') or (data['type'] == 'withdraw'):
+            logging.debug ("process announcement or withdraw of prefix: " + data['prefix'])
             try:
-                logging.debug ("insert or replace prefix: " + data['validated_route']['route']['prefix'])
-                vbulk.find({ 'validated_route.route.prefix' : data['validated_route']['route']['prefix'] }).upsert().replace_one(data)
+                bulk.insert(data)
             except Exception, e:
-                logging.exception ("bulk update or insert entry, failed with: %s ", e.message)
+                logging.exception ("bulk insert, failed with: %s ", e.message)
             else:
-                vbulk_len += 1
-        elif (data['type'] == 'withdraw'):
-            logging.debug ("process withdraw")
-            try:
-                logging.debug("delete prefix if exists: " + data['prefix'] )
-                vbulk.find({ 'validated_route.route.prefix' : data['prefix'] }).remove()
-            except Exception, e:
-                logging.exception ("bulk delete entry, failed with: %s" , e.message)
-            else:
-                vbulk_len += 1
+                bulk_len += 1
         else:
             logging.warning ("Type not supported, must be either announcement or withdraw!")
             continue
 
-        # archive data?
-        if (keepdata) and \
-                (data['type'] == 'announcement') and \
-                ('validated_route' in data.keys()) and \
-                (data['validated_route']['validity']['state'] != 'NotFound'):
-            adata = data.copy()
-            adata['archive'] = True
-            logging.debug("keepdata, insert " +adata['type']+ " for prefix: " +adata['prefix'])
-            try:
-                abulk.insert(adata)
-            except Exception, e:
-                logging.exception ("archive entry, failed with: %s ", e.message)
-            else:
-                abulk_len += 1
-        # end keepdata
-
         now = datetime.now()
         timeout = now - begin
         # exec bulk validity
-        if ((abulk_len + vbulk_len) > MAX_BULK_OPS) or (timeout.total_seconds() > MAX_TIMEOUT):
+        if (bulk_len > MAX_BULK_OPS) or (timeout.total_seconds() > MAX_TIMEOUT):
             begin = datetime.now()
             logging.info ("do mongo bulk operation ...")
             try:
-                vbulk.execute({'w': 0})
-                if abulk_len > 0:
-                    abulk.execute({'w': 0})
+                bulk.execute({'w': 0})
             except Exception, e:
                 logging.exception ("bulk operation, failed with: %s" , e.message)
             finally:
-                abulk = db.archive.initialize_ordered_bulk_op()
-                abulk_len = 0
-                vbulk = db.validity.initialize_ordered_bulk_op()
-                vbulk_len = 0
+                bulk = db.validity.initialize_unordered_bulk_op()
+                bulk_len = 0
