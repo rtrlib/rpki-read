@@ -17,6 +17,7 @@ from subprocess import PIPE, Popen
 from settings import *
 
 def _get_validity(validation_result_string):
+    """Parse validation result and fill in response information"""
     validity = dict()
     validity['code'] = 100
     validity['state'] = 'Error'
@@ -79,7 +80,9 @@ def _get_validity(validation_result_string):
     return validity
 
 def validator(in_queue, out_queue, cache_host, cache_port):
+    """The validation thread, this is where the work is done."""
     logging.info ("start validator thread")
+    # start RPKI validation client process
     cache_cmd = [validator_path, cache_host, cache_port]
     validator_process = Popen(cache_cmd, stdin=PIPE, stdout=PIPE)
     logging.info ("run validator thread (%s:%s)" % (cache_host, cache_port))
@@ -115,6 +118,7 @@ def validator(in_queue, out_queue, cache_host, cache_port):
     return True
 
 def output(queue, format_json):
+    """Output validation result as one line JSON, pretty JSON formatting is optional"""
     logging.info ("start output")
     while True:
         odata = queue.get()
@@ -131,6 +135,7 @@ def output(queue, format_json):
     return True
 
 def main():
+    """The main loop, parsing arguments and start input and output threads"""
     parser = argparse.ArgumentParser(description='', epilog='')
     parser.add_argument('-l', '--loglevel',
                         help='Set loglevel [DEBUG,INFO,WARNING,ERROR,CRITICAL].',
@@ -168,7 +173,7 @@ def main():
     ot = mp.Process(target=output,
                     args=(output_queue,args['json']))
     ot.start()
-    # main loop
+    # main loop, reading from STDIN
     while True:
         line = sys.stdin.readline().strip()
         try:
@@ -196,10 +201,10 @@ def main():
                                         data['timestamp'],
                                         data['next_hop']) )
 
+    # we should not get here, but just in case we stop everything gracefully
     input_queue.put("STOP")
     output_queue.put("STOP")
     logging.info("FINISH")
-
 
 if __name__ == "__main__":
     main()

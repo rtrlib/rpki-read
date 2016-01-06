@@ -7,11 +7,13 @@ from pymongo import MongoClient
 from settings import MAX_TIMEOUT, MAX_BULK_OPS
 
 def output_stat(dbconnstr, interval):
+    """Generate and store validation statistics in database"""
     logging.debug ("CALL output_stat mongodb, with" +dbconnstr)
+    # simple check if interval is valid, that is non-negative
     if interval < 1:
         logging.warning("invalid interval for output_stat, reset to 60s!")
         interval = 60
-
+    # open db connection
     client = MongoClient(dbconnstr)
     db = client.get_default_database()
     while True:
@@ -37,6 +39,7 @@ def output_stat(dbconnstr, interval):
         time.sleep(interval)
 
 def output_data(dbconnstr, queue, dropdata, keepdata):
+    """Store validation results into database"""
     logging.debug ("CALL output_data mongodb, with" +dbconnstr)
     client = MongoClient(dbconnstr)
     db = client.get_default_database()

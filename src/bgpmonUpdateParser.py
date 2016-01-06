@@ -19,6 +19,7 @@ from datetime import datetime
 from settings import default_bgpmon_server
 
 def parse_bgp_message(xml):
+    """Returns a dict of a parsed BGP XML update message"""
     logging.info("CALL parse_bgp_message")
     try:
         tree = ET.fromstring(xml)
@@ -45,7 +46,6 @@ def parse_bgp_message(xml):
         logging.warning ("Invalid XML, no source!")
         return None
     ts = dt.find('{urn:ietf:params:xml:ns:bgp_monitor}TIMESTAMP').text
-
 
     # check wether it is a keep alive message
     keep_alive = tree.find('{urn:ietf:params:xml:ns:xfb}KEEP_ALIVE')
@@ -95,6 +95,7 @@ def parse_bgp_message(xml):
     return bgp_message
 
 def recv_bgpmon_rib(host, port, queue):
+    """Read the RIB XML stream of bgpmon"""
     logging.info ("CALL recv_bgpmon_rib (%s:%d)", host, port)
     # open connection
     sock =  socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -117,16 +118,19 @@ def recv_bgpmon_rib(host, port, queue):
         while (re.search('</BGP_MONITOR_MESSAGE>', stream)):
             messages = stream.split('</BGP_MONITOR_MESSAGE>')
             msg = messages[0] + '</BGP_MONITOR_MESSAGE>'
+            # stop RIB parsing after TABLE_STOP message
             if re.search('TABLE_STOP', msg):
                 logging.info("found TABLE_STOP in XML RIB stream.")
                 parse = False
                 run = False
                 break
             stream = '</BGP_MONITOR_MESSAGE>'.join(messages[1:])
+            # parse RIB message if parsing is enabled
             if parse:
                 result = parse_bgp_message(msg)
                 if result:
                     queue.put(result)
+            # start RIB parsing after TABLE_START message
             if re.search('TABLE_START', msg):
                 logging.info("found TABLE_START in XML RIB stream.")
                 parse = True
@@ -134,6 +138,7 @@ def recv_bgpmon_rib(host, port, queue):
     return True
 
 def recv_bgpmon_messages(host, port, queue):
+    """Read the BGP update XML stream of bgpmon"""
     logging.info ("CALL recv_bgpmon_updates (%s:%d)", host, port)
     # open connection
     sock =  socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -161,6 +166,7 @@ def recv_bgpmon_messages(host, port, queue):
     return True
 
 def output(queue):
+    """Output parsed BGP messages as JSON to STDOUT"""
     logging.info ("CALL output")
     while True:
         odata = queue.get()
@@ -172,6 +178,7 @@ def output(queue):
     return True
 
 def main():
+    """The main loop"""
     parser = argparse.ArgumentParser(description='', epilog='')
     parser.add_argument('-l', '--loglevel',
                         help='Set loglevel [DEBUG,INFO,WARNING,ERROR,CRITICAL].',
