@@ -5,7 +5,7 @@ from bson.son import SON
 from datetime import datetime, timedelta
 from math import sqrt
 from pymongo import MongoClient
-from settings import MAX_TIMEOUT, MAX_BULK_OPS
+from settings import MAX_TIMEOUT, MAX_BULK_OPS, MAX_PURGE_ITEMS
 
 def output_stat(dbconnstr, interval):
     """Generate and store validation statistics in database"""
@@ -18,6 +18,7 @@ def output_stat(dbconnstr, interval):
     client = MongoClient(dbconnstr)
     db = client.get_default_database()
     while True:
+        # create stats
         stats = dict()
         stats['ts'] = 'now'
         stats['num_Valid'] = 0
@@ -27,9 +28,14 @@ def output_stat(dbconnstr, interval):
         try:
             if "validity" in db.collection_names() and db.validity.count() > 0:
                 pipeline = [
-                    { "$match": { 'type' : 'announcement' } },
                     { "$sort": SON( [ ( "prefix", 1), ("timestamp", -1 ) ] ) },
-                    { "$group": { "_id": "$prefix", "timestamp": { "$first": "$timestamp" }, "validity": { "$first": "$validated_route.validity.state"} } },
+                    { "$group": {   "_id": "$prefix",
+                                    "timestamp": { "$first": "$timestamp" },
+                                    "validity": { "$first": "$validated_route.validity.state"},
+                                    "type" : { "$first" : "$type" }
+                                }
+                    },
+                    { "$match": { 'type' : 'announcement' } },
                     { "$group": { "_id": "$validity", "count": { "$sum": 1} } }
                 ]
                 results = list(db.validity.aggregate( pipeline ))
@@ -42,6 +48,18 @@ def output_stat(dbconnstr, interval):
         else:
             if stats['ts'] != 'now':
                 db.validity_stats.insert_one(stats)
+        # purge old NotFound entries
+        pipeline = [
+            { "$group": { "_id": '$prefix', "plist": { "$push" : { "pid": "$_id", "timestamp": "$timestamp", "type": "$type", "validity": "$validated_route.validity.state" } }, "maxts": {"$max" : '$timestamp'} } },
+            { "$unwind": "$plist" },
+            { "$match": {'plist.validity' : "NotFound"} },
+            { "$project": {"toDelete": { "$cond": [ { "$lt": [ "$plist.timestamp", "$maxts" ] }, "true", "false" ] }, "_id" : '$plist.pid', 'maxts': '$maxts', 'timestamp': '$plist.timestamp'} },
+            { "$match": {'toDelete': "true"} },
+            { "$limit": MAX_PURGE_ITEMS}
+        ]
+        purge = db.validity.aggregate(pipeline)
+        for p in purge:
+            db.validity.remove({"_id": p['_id']})
         time.sleep(interval)
 
 def output_data(dbconnstr, queue, dropdata):

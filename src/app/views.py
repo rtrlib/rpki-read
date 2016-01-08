@@ -13,8 +13,6 @@ from app import app
 import config
 if config.DATABASE_TYPE == 'mongodb':
     from mongodb import get_validation_stats, get_list
-elif config.DATABASE_TYPE == 'postgresql':
-    from postgresql import get_validation_stats, get_list
 else:
     logging.critical("unknown database type!")
     sys.exit(1)

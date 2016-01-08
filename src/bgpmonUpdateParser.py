@@ -94,17 +94,20 @@ def parse_bgp_message(xml):
 
     return bgp_message
 
+def _init_bgpmon_sock(host, port):
+    bm_sock =  socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        bm_sock.connect((host,port))
+    except:
+        logging.critical ("Failed to connect to BGPmon XML RIB stream!")
+        sys.exit(1)
+    return bm_sock
+
 def recv_bgpmon_rib(host, port, queue):
     """Read the RIB XML stream of bgpmon"""
     logging.info ("CALL recv_bgpmon_rib (%s:%d)", host, port)
     # open connection
-    sock =  socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    try:
-        sock.connect((host,port))
-    except:
-        logging.critical ("Failed to connect to BGPmon XML RIB stream!")
-        sys.exit(1)
-
+    sock = _init_bgpmon_sock(host,port)
     data = ""
     stream = ""
     # receive data
@@ -113,6 +116,11 @@ def recv_bgpmon_rib(host, port, queue):
     logging.info("receiving XML RIB stream ...")
     while(run):
         data = sock.recv(1024)
+        if not data:
+            sock.close()
+            sock = _init_bgpmon_sock(host,port)
+            continue
+
         stream += data
         stream = string.replace(stream, "<xml>", "")
         while (re.search('</BGP_MONITOR_MESSAGE>', stream)):
@@ -135,25 +143,24 @@ def recv_bgpmon_rib(host, port, queue):
                 logging.info("found TABLE_START in XML RIB stream.")
                 parse = True
 
+    sock.close()
     return True
 
 def recv_bgpmon_messages(host, port, queue):
     """Read the BGP update XML stream of bgpmon"""
     logging.info ("CALL recv_bgpmon_updates (%s:%d)", host, port)
     # open connection
-    sock =  socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    try:
-        sock.connect((host,port))
-    except:
-        logging.critical ("Failed to connect to BGPmon XML update stream!")
-        sys.exit(1)
-
+    sock = _init_bgpmon_sock(host,port)
     data = ""
     stream = ""
     # receive data
     logging.info("receiving XML update stream ...")
     while(True):
         data = sock.recv(1024)
+        if not data:
+            sock.close()
+            sock = _init_bgpmon_sock(host,port)
+            continue
         stream += data
         stream = string.replace(stream, "<xml>", "")
         while (re.search('</BGP_MONITOR_MESSAGE>', stream)):

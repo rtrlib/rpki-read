@@ -2,7 +2,7 @@ import logging
 
 from bson.son import SON
 from datetime import datetime
-from pymongo import MongoClient, DESCENDING
+from pymongo import MongoClient, DESCENDING, ASCENDING
 
 def get_validation_stats(dbconnstr):
     client = MongoClient(dbconnstr)
@@ -18,9 +18,14 @@ def get_validation_stats(dbconnstr):
     stats['stats_roa'] = []
     try:
         pipeline = [
+            { "$sort": SON( [ ( "prefix", ASCENDING), ("timestamp", DESCENDING ) ] ) },
+            { "$group": {   "_id": "$prefix",
+                            "timestamp": { "$first": "$timestamp" },
+                            "validity": { "$first": "$validated_route.validity.state"},
+                            "type" : { "$first" : "$type" }
+                        }
+            },
             { "$match": { 'type' : 'announcement' } },
-            { "$sort": SON( [ ( "prefix", 1), ("timestamp", -1 ) ] ) },
-            { "$group": { "_id": "$prefix", "timestamp": { "$first": "$timestamp" }, "validity": { "$first": "$validated_route.validity.state"} } },
             { "$group": { "_id": "$validity", "count": { "$sum": 1} } }
         ]
         results = list(db.validity.aggregate( pipeline ))

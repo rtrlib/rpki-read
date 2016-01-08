@@ -9,6 +9,7 @@ local systems Python installation untouched.
 ## backend
 
 The LBV backend consists of 3 components:
+
 1. the [parser](src/bgpmonUpdateParser.py), to extract prefix origins from a XML BGP update stream
 2. the [validator](src/validator.py), to validate prefix origins against an RPKI cache
 3. the [database](src/dbHandler.py), to store latest validation results
@@ -18,16 +19,15 @@ run on their own and are interchangeable. They follow common UNIX tools, i.e,
 read input from STDIN and write to STDOUT if feasible. Thus, the complete LBV
 backend is basically running these 3 tools in a chain.
 
-The validation results are stored in a database. LBV currently supports MongoDB
-and PostgreSQL, we heavily recommend using MongoDB for best performance (and the
-code is way shorter and easier to understand). This database is also used by the
-web frontend to display validation results and statistics.
+The validation results are stored in a database, LBV currently uses a MongoDB.
+This database is also used by the web frontend to display validation results and
+statistics.
 
 ### requirements
 
 The backend mostly uses standard Python libraries however to parse IP prefixes
-and addresses we use _netaddr_, and depending on the database LBV requires
-_pymongo_ or _psycopg2_.
+and addresses we use _netaddr_, and for the mongodb database LBV requires
+_pymongo_.
 
 Besides that you need access to a [BGPmon](http://www.bgpmon.io) instance to
 receive its BGP update stream.
