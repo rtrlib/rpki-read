@@ -16,6 +16,7 @@ from subprocess import PIPE, Popen
 
 # internal imports
 from mongodb import output_data, output_stat
+from purgeNotFound import purge_notfound
 from settings import *
 
 def main():
@@ -26,12 +27,12 @@ def main():
     parser.add_argument('-l', '--loglevel',
                         help='Set loglevel [DEBUG,INFO,WARNING,ERROR,CRITICAL].',
                         type=str, default='WARNING')
-    parser.add_argument('-i', '--interval',
-                        help='Set timeout interval for stats, default: 60s.',
-                        type=int, default=60)
     parser.add_argument('-m', '--mongodb',
                         help='MongoDB connection parameters.',
                         type=str, required=True)
+    parser.add_argument('-p', '--purge',
+                        help='Purge expired NotFound validation results.',
+                        action='store_true', default=False)
 
     args = vars(parser.parse_args())
 
@@ -51,9 +52,20 @@ def main():
                                 args=(dbconnstr,queue,args['dropdata']))
     output_data_p.start()
 
+    stats_interval = STATS_TIMEOUT
+    if stats_interval < 1:
+        stats_interval = 60
     output_stat_p = mp.Process( target=output_stat,
-                                args=(dbconnstr,args['interval']))
+                                args=(dbconnstr,stats_interval))
     output_stat_p.start()
+    if args['purge']:
+        purge_interval = PURGE_TIMEOUT
+        if purge_interval < 1:
+            purge_interval = 60
+        purge_p = mp.Process(   target=purge_notfound,
+                                args=(dbconnstr,purge_interval))
+        purge_p.start()
+
     # main loop
     counter = 0
     while True:

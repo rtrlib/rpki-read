@@ -13,7 +13,9 @@ validity_descr = [  "At least one VRP Matches the Route Prefix",
 default_cache_server = {"host": "rpki-validator.realmv6.org", "port": 8282}
 default_bgpmon_server = {"host": "localhost", "port": 50001}
 
-MAX_BULK_OPS = 10000
-MAX_PURGE_ITEMS = 30000
+BULK_MAX_OPS = 10000
+BULK_TIMEOUT = 30
+PURGE_MAX_ITEMS = 30000
+PURGE_TIMEOUT = 60
+STATS_TIMEOUT = 60
 MAX_COUNTER = 10000
-MAX_TIMEOUT = 30
