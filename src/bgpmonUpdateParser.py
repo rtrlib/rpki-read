@@ -1,20 +1,23 @@
 #!/usr/bin/python
-import sys
-import os
-import json
-import socket
-import string
-import re
-import xml
+
 import argparse
 import calendar
+import json
 import logging
+import os
+import re
+import socket
+import string
+import sys
+import time
+import xml
+
 
 import multiprocessing as mp
 import xml.etree.ElementTree as ET
 
-from xml.dom import minidom
 from datetime import datetime
+from xml.dom import minidom
 
 from settings import default_bgpmon_server
 
@@ -118,6 +121,7 @@ def recv_bgpmon_rib(host, port, queue):
         data = sock.recv(1024)
         if not data:
             sock.close()
+            time.sleep(60)
             sock = _init_bgpmon_sock(host,port)
             continue
 
@@ -159,6 +163,7 @@ def recv_bgpmon_messages(host, port, queue):
         data = sock.recv(1024)
         if not data:
             sock.close()
+            time.sleep(60)
             sock = _init_bgpmon_sock(host,port)
             continue
         stream += data
@@ -215,16 +220,20 @@ def main():
     output_queue = mp.Queue()
     ot = mp.Process(target=output,
                     args=(output_queue,))
+    rt = mp.Process(target=recv_bgpmon_rib,
+                    args=(addr,args['ribport'], output_queue))
     try:
         ot.start()
-        if args['ribport']:
-            recv_bgpmon_rib(addr, args['ribport'], output_queue)
+        if args['ribport'] > 0:
+            rt.start()
         recv_bgpmon_messages(addr,port,output_queue)
     except KeyboardInterrupt:
         logging.exception ("ABORT")
     finally:
         output_queue.put("STOP")
 
+    if args['ribport'] > 0:
+        rt.terminate()
     ot.join()
     logging.info("FINISH")
     # END
