@@ -95,7 +95,8 @@ def validator(in_queue, out_queue, cache_host, cache_port):
         network, masklen    = validation_entry[0].split('/')
         asn                 = validation_entry[1]
         bgp_entry_str = str(network) + " " + str(masklen) + " " + str(asn)
-
+        if validator_process.poll() is not None:
+            validator_process = Popen(cache_cmd, stdin=PIPE, stdout=PIPE)
         validator_process.stdin.write(bgp_entry_str + '\n')
         validation_result = validator_process.stdout.readline().strip()
         validity =  _get_validity(validation_result)
