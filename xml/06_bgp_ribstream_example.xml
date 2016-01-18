@@ -1,0 +1,288 @@
+<BGP_MONITOR_MESSAGE xmlns:xsi="http://www.w3.org/2001/XMLSchema" xmlns="urn:ietf:params:xml:ns:bgp_monitor" xmlns:bgp="urn:ietf:params:xml:ns:xfb" xmlns:ne="urn:ietf:params:xml:ns:network_elements">
+    <SOURCE>
+        <ADDRESS afi="1">129.82.138.6</ADDRESS>
+        <PORT>179</PORT>
+        <ASN2>6447</ASN2>
+    </SOURCE>
+    <DEST>
+        <ADDRESS afi="1">129.82.138.26</ADDRESS>
+        <PORT>179</PORT>
+        <ASN2>64514</ASN2>
+    </DEST>
+    <MONITOR>
+        <ADDRESS afi="0">ipv4any</ADDRESS>
+        <PORT>0</PORT>
+        <ASN4>0</ASN4>
+    </MONITOR>
+    <OBSERVED_TIME precision="false">
+        <TIMESTAMP>1452759520</TIMESTAMP>
+        <DATETIME>2016-01-14T08:18:40Z</DATETIME>
+    </OBSERVED_TIME>
+    <SEQUENCE_NUMBER>581338069</SEQUENCE_NUMBER>
+    <COLLECTION>TABLE_DUMP</COLLECTION>
+    <bgp:UPDATE bgp_message_type="2">
+        <bgp:ORIGIN optional="false" transitive="true" partial="false" extended="false" attribute_type="1">IGP</bgp:ORIGIN>
+        <bgp:AS_PATH optional="false" transitive="true" partial="false" extended="false" attribute_type="2">
+            <bgp:AS_SEQUENCE>
+                <bgp:ASN2>12145</bgp:ASN2>
+                <bgp:ASN2>14041</bgp:ASN2>
+                <bgp:ASN2>11164</bgp:ASN2>
+                <bgp:ASN2>4323</bgp:ASN2>
+                <bgp:ASN2>27537</bgp:ASN2>
+                <bgp:ASN2>8347</bgp:ASN2>
+            </bgp:AS_SEQUENCE>
+        </bgp:AS_PATH>
+        <bgp:NEXT_HOP optional="false" transitive="true" partial="false" extended="false" attribute_type="3" afi="1">129.82.138.6</bgp:NEXT_HOP>
+        <bgp:COMMUNITY optional="true" transitive="true" partial="false" extended="false" attribute_type="8">
+            <bgp:ASN2>11164</bgp:ASN2>
+            <bgp:VALUE>1140</bgp:VALUE>
+        </bgp:COMMUNITY>
+        <bgp:COMMUNITY optional="true" transitive="true" partial="false" extended="false" attribute_type="8">
+            <bgp:ASN2>11164</bgp:ASN2>
+            <bgp:VALUE>7880</bgp:VALUE>
+        </bgp:COMMUNITY>
+        <bgp:COMMUNITY optional="true" transitive="true" partial="false" extended="false" attribute_type="8">
+            <bgp:ASN2>14041</bgp:ASN2>
+            <bgp:VALUE>202</bgp:VALUE>
+        </bgp:COMMUNITY>
+        <bgp:NLRI afi="1">192.117.64.0/20</bgp:NLRI>
+        <bgp:NLRI afi="1">192.117.208.0/20</bgp:NLRI>
+    </bgp:UPDATE>
+    <OCTET_MESSAGE>FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF004A020000002B4001010040030481528A06C0080C2B9C04742B9C1EC836D900CA40020E02062F7136D92B9C10E36B91209B14C0754014C075D0</OCTET_MESSAGE>
+</BGP_MONITOR_MESSAGE>
+<BGP_MONITOR_MESSAGE xmlns:xsi="http://www.w3.org/2001/XMLSchema" xmlns="urn:ietf:params:xml:ns:bgp_monitor" xmlns:bgp="urn:ietf:params:xml:ns:xfb" xmlns:ne="urn:ietf:params:xml:ns:network_elements">
+    <SOURCE>
+        <ADDRESS afi="1">129.82.138.6</ADDRESS>
+        <PORT>179</PORT>
+        <ASN2>6447</ASN2>
+    </SOURCE>
+    <DEST>
+        <ADDRESS afi="1">129.82.138.26</ADDRESS>
+        <PORT>179</PORT>
+        <ASN2>64514</ASN2>
+    </DEST>
+    <MONITOR>
+        <ADDRESS afi="0">ipv4any</ADDRESS>
+        <PORT>0</PORT>
+        <ASN4>0</ASN4>
+    </MONITOR>
+    <OBSERVED_TIME precision="false">
+        <TIMESTAMP>1452759520</TIMESTAMP>
+        <DATETIME>2016-01-14T08:18:40Z</DATETIME>
+    </OBSERVED_TIME>
+    <SEQUENCE_NUMBER>581338070</SEQUENCE_NUMBER>
+    <COLLECTION>TABLE_DUMP</COLLECTION>
+    <bgp:UPDATE bgp_message_type="2">
+        <bgp:ORIGIN optional="false" transitive="true" partial="false" extended="false" attribute_type="1">IGP</bgp:ORIGIN>
+        <bgp:AS_PATH optional="false" transitive="true" partial="false" extended="false" attribute_type="2">
+            <bgp:AS_SEQUENCE>
+                <bgp:ASN2>3257</bgp:ASN2>
+                <bgp:ASN2>2914</bgp:ASN2>
+                <bgp:ASN2>58463</bgp:ASN2>
+                <bgp:ASN2>18059</bgp:ASN2>
+                <bgp:ASN2>55660</bgp:ASN2>
+            </bgp:AS_SEQUENCE>
+        </bgp:AS_PATH>
+        <bgp:NEXT_HOP optional="false" transitive="true" partial="false" extended="false" attribute_type="3" afi="1">129.82.138.6</bgp:NEXT_HOP>
+        <bgp:MULTI_EXIT_DISC optional="true" transitive="false" partial="false" extended="false" attribute_type="4">10</bgp:MULTI_EXIT_DISC>
+        <bgp:COMMUNITY optional="true" transitive="true" partial="false" extended="false" attribute_type="8">
+            <bgp:ASN2>3257</bgp:ASN2>
+            <bgp:VALUE>8133</bgp:VALUE>
+        </bgp:COMMUNITY>
+        <bgp:COMMUNITY optional="true" transitive="true" partial="false" extended="false" attribute_type="8">
+            <bgp:ASN2>3257</bgp:ASN2>
+            <bgp:VALUE>30183</bgp:VALUE>
+        </bgp:COMMUNITY>
+        <bgp:COMMUNITY optional="true" transitive="true" partial="false" extended="false" attribute_type="8">
+            <bgp:ASN2>3257</bgp:ASN2>
+            <bgp:VALUE>50001</bgp:VALUE>
+        </bgp:COMMUNITY>
+        <bgp:COMMUNITY optional="true" transitive="true" partial="false" extended="false" attribute_type="8">
+            <bgp:ASN2>3257</bgp:ASN2>
+            <bgp:VALUE>54901</bgp:VALUE>
+        </bgp:COMMUNITY>
+        <bgp:NLRI afi="1">103.229.73.0/24</bgp:NLRI>
+        <bgp:NLRI afi="1">103.229.72.0/24</bgp:NLRI>
+        <bgp:NLRI afi="1">103.229.74.0/24</bgp:NLRI>
+        <bgp:NLRI afi="1">103.11.75.0/24</bgp:NLRI>
+        <bgp:NLRI afi="1">103.229.75.0/24</bgp:NLRI>
+        <bgp:NLRI afi="1">103.25.223.0/24</bgp:NLRI>
+        <bgp:NLRI afi="1">103.25.222.0/24</bgp:NLRI>
+    </bgp:UPDATE>
+    <OCTET_MESSAGE>FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF006702000000344001010040030481528A068004040000000AC008100CB91FC50CB975E70CB9C3510CB9D67540020C02050CB90B62E45F468BD96C1867E5491867E5481867E54A18670B4B1867E54B186719DF186719DE</OCTET_MESSAGE>
+</BGP_MONITOR_MESSAGE>
+<BGP_MONITOR_MESSAGE xmlns:xsi="http://www.w3.org/2001/XMLSchema" xmlns="urn:ietf:params:xml:ns:bgp_monitor" xmlns:bgp="urn:ietf:params:xml:ns:xfb" xmlns:ne="urn:ietf:params:xml:ns:network_elements">
+    <SOURCE>
+        <ADDRESS afi="1">129.82.138.6</ADDRESS>
+        <PORT>179</PORT>
+        <ASN2>6447</ASN2>
+    </SOURCE>
+    <DEST>
+        <ADDRESS afi="1">129.82.138.26</ADDRESS>
+        <PORT>179</PORT>
+        <ASN2>64514</ASN2>
+    </DEST>
+    <MONITOR>
+        <ADDRESS afi="0">ipv4any</ADDRESS>
+        <PORT>0</PORT>
+        <ASN4>0</ASN4>
+    </MONITOR>
+    <OBSERVED_TIME precision="false">
+        <TIMESTAMP>1452759520</TIMESTAMP>
+        <DATETIME>2016-01-14T08:18:40Z</DATETIME>
+    </OBSERVED_TIME>
+    <SEQUENCE_NUMBER>581338071</SEQUENCE_NUMBER>
+    <COLLECTION>TABLE_DUMP</COLLECTION>
+    <bgp:UPDATE bgp_message_type="2">
+        <bgp:ORIGIN optional="false" transitive="true" partial="false" extended="false" attribute_type="1">IGP</bgp:ORIGIN>
+        <bgp:AS_PATH optional="false" transitive="true" partial="false" extended="false" attribute_type="2">
+            <bgp:AS_SEQUENCE>
+                <bgp:ASN2>3257</bgp:ASN2>
+                <bgp:ASN2>13768</bgp:ASN2>
+                <bgp:ASN2>54527</bgp:ASN2>
+            </bgp:AS_SEQUENCE>
+        </bgp:AS_PATH>
+        <bgp:NEXT_HOP optional="false" transitive="true" partial="false" extended="false" attribute_type="3" afi="1">129.82.138.6</bgp:NEXT_HOP>
+        <bgp:MULTI_EXIT_DISC optional="true" transitive="false" partial="false" extended="false" attribute_type="4">10</bgp:MULTI_EXIT_DISC>
+        <bgp:COMMUNITY optional="true" transitive="true" partial="false" extended="false" attribute_type="8">
+            <bgp:ASN2>3257</bgp:ASN2>
+            <bgp:VALUE>4000</bgp:VALUE>
+        </bgp:COMMUNITY>
+        <bgp:COMMUNITY optional="true" transitive="true" partial="false" extended="false" attribute_type="8">
+            <bgp:ASN2>3257</bgp:ASN2>
+            <bgp:VALUE>8093</bgp:VALUE>
+        </bgp:COMMUNITY>
+        <bgp:COMMUNITY optional="true" transitive="true" partial="false" extended="false" attribute_type="8">
+            <bgp:ASN2>3257</bgp:ASN2>
+            <bgp:VALUE>50002</bgp:VALUE>
+        </bgp:COMMUNITY>
+        <bgp:COMMUNITY optional="true" transitive="true" partial="false" extended="false" attribute_type="8">
+            <bgp:ASN2>3257</bgp:ASN2>
+            <bgp:VALUE>50122</bgp:VALUE>
+        </bgp:COMMUNITY>
+        <bgp:COMMUNITY optional="true" transitive="true" partial="false" extended="false" attribute_type="8">
+            <bgp:ASN2>3257</bgp:ASN2>
+            <bgp:VALUE>51400</bgp:VALUE>
+        </bgp:COMMUNITY>
+        <bgp:COMMUNITY optional="true" transitive="true" partial="false" extended="false" attribute_type="8">
+            <bgp:ASN2>3257</bgp:ASN2>
+            <bgp:VALUE>51401</bgp:VALUE>
+        </bgp:COMMUNITY>
+        <bgp:NLRI afi="1">69.172.219.0/24</bgp:NLRI>
+        <bgp:NLRI afi="1">199.167.21.0/24</bgp:NLRI>
+    </bgp:UPDATE>
+    <OCTET_MESSAGE>FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF005702000000384001010040030481528A068004040000000AC008180CB90FA00CB91F9D0CB9C3520CB9C3CA0CB9C8C80CB9C8C940020802030CB935C8D4FF1845ACDB18C7A715</OCTET_MESSAGE>
+</BGP_MONITOR_MESSAGE>
+<BGP_MONITOR_MESSAGE xmlns:xsi="http://www.w3.org/2001/XMLSchema" xmlns="urn:ietf:params:xml:ns:bgp_monitor" xmlns:bgp="urn:ietf:params:xml:ns:xfb" xmlns:ne="urn:ietf:params:xml:ns:network_elements">
+    <SOURCE>
+        <ADDRESS afi="1">129.82.138.6</ADDRESS>
+        <PORT>179</PORT>
+        <ASN2>6447</ASN2>
+    </SOURCE>
+    <DEST>
+        <ADDRESS afi="1">129.82.138.26</ADDRESS>
+        <PORT>179</PORT>
+        <ASN2>64514</ASN2>
+    </DEST>
+    <MONITOR>
+        <ADDRESS afi="0">ipv4any</ADDRESS>
+        <PORT>0</PORT>
+        <ASN4>0</ASN4>
+    </MONITOR>
+    <OBSERVED_TIME precision="false">
+        <TIMESTAMP>1452759520</TIMESTAMP>
+        <DATETIME>2016-01-14T08:18:40Z</DATETIME>
+    </OBSERVED_TIME>
+    <SEQUENCE_NUMBER>581338072</SEQUENCE_NUMBER>
+    <COLLECTION>TABLE_DUMP</COLLECTION>
+    <bgp:UPDATE bgp_message_type="2">
+        <bgp:ORIGIN optional="false" transitive="true" partial="false" extended="false" attribute_type="1">IGP</bgp:ORIGIN>
+        <bgp:AS_PATH optional="false" transitive="true" partial="false" extended="false" attribute_type="2">
+            <bgp:AS_SEQUENCE>
+                <bgp:ASN2>3257</bgp:ASN2>
+                <bgp:ASN2>13768</bgp:ASN2>
+                <bgp:ASN2>54527</bgp:ASN2>
+            </bgp:AS_SEQUENCE>
+        </bgp:AS_PATH>
+        <bgp:NEXT_HOP optional="false" transitive="true" partial="false" extended="false" attribute_type="3" afi="1">129.82.138.6</bgp:NEXT_HOP>
+        <bgp:MULTI_EXIT_DISC optional="true" transitive="false" partial="false" extended="false" attribute_type="4">10</bgp:MULTI_EXIT_DISC>
+        <bgp:AGGREGATOR optional="true" transitive="true" partial="false" extended="false" attribute_type="7">
+            <bgp:ASN2>54527</bgp:ASN2>
+            <bgp:IPv4_ADDRESS afi="1">69.172.213.71</bgp:IPv4_ADDRESS>
+        </bgp:AGGREGATOR>
+        <bgp:COMMUNITY optional="true" transitive="true" partial="false" extended="false" attribute_type="8">
+            <bgp:ASN2>3257</bgp:ASN2>
+            <bgp:VALUE>4000</bgp:VALUE>
+        </bgp:COMMUNITY>
+        <bgp:COMMUNITY optional="true" transitive="true" partial="false" extended="false" attribute_type="8">
+            <bgp:ASN2>3257</bgp:ASN2>
+            <bgp:VALUE>8153</bgp:VALUE>
+        </bgp:COMMUNITY>
+        <bgp:COMMUNITY optional="true" transitive="true" partial="false" extended="false" attribute_type="8">
+            <bgp:ASN2>3257</bgp:ASN2>
+            <bgp:VALUE>50002</bgp:VALUE>
+        </bgp:COMMUNITY>
+        <bgp:COMMUNITY optional="true" transitive="true" partial="false" extended="false" attribute_type="8">
+            <bgp:ASN2>3257</bgp:ASN2>
+            <bgp:VALUE>50121</bgp:VALUE>
+        </bgp:COMMUNITY>
+        <bgp:COMMUNITY optional="true" transitive="true" partial="false" extended="false" attribute_type="8">
+            <bgp:ASN2>3257</bgp:ASN2>
+            <bgp:VALUE>51200</bgp:VALUE>
+        </bgp:COMMUNITY>
+        <bgp:COMMUNITY optional="true" transitive="true" partial="false" extended="false" attribute_type="8">
+            <bgp:ASN2>3257</bgp:ASN2>
+            <bgp:VALUE>51202</bgp:VALUE>
+        </bgp:COMMUNITY>
+        <bgp:NLRI afi="1">104.37.72.0/24</bgp:NLRI>
+    </bgp:UPDATE>
+    <OCTET_MESSAGE>FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF005C02000000414001010040030481528A068004040000000AC00706D4FF45ACD547C008180CB90FA00CB91FD90CB9C3520CB9C3C90CB9C8000CB9C80240020802030CB935C8D4FF18682548</OCTET_MESSAGE>
+</BGP_MONITOR_MESSAGE>
+<BGP_MONITOR_MESSAGE xmlns:xsi="http://www.w3.org/2001/XMLSchema" xmlns="urn:ietf:params:xml:ns:bgp_monitor" xmlns:bgp="urn:ietf:params:xml:ns:xfb" xmlns:ne="urn:ietf:params:xml:ns:network_elements">
+    <MONITOR>
+        <ADDRESS afi="0"></ADDRESS>
+        <PORT>0</PORT>
+        <ASN4>0</ASN4>
+    </MONITOR>
+    <OBSERVED_TIME precision="false">
+        <TIMESTAMP>1452759522</TIMESTAMP>
+        <DATETIME>2016-01-14T08:18:42Z</DATETIME>
+    </OBSERVED_TIME>
+    <SEQUENCE_NUMBER>0</SEQUENCE_NUMBER>
+    <STATUS Author_Xpath="/BGP_MONITOR_MESSAGE/MONITOR">
+        <TYPE>SKIP_AHEAD</TYPE>
+        <MESSAGE>28 messages were skipped in queue LabelQueue</MESSAGE>
+    </STATUS>
+</BGP_MONITOR_MESSAGE>
+<BGP_MONITOR_MESSAGE xmlns:xsi="http://www.w3.org/2001/XMLSchema" xmlns="urn:ietf:params:xml:ns:bgp_monitor" xmlns:bgp="urn:ietf:params:xml:ns:xfb" xmlns:ne="urn:ietf:params:xml:ns:network_elements">
+    <MONITOR>
+        <ADDRESS afi="0"></ADDRESS>
+        <PORT>0</PORT>
+        <ASN4>0</ASN4>
+    </MONITOR>
+    <OBSERVED_TIME precision="false">
+        <TIMESTAMP>1452759523</TIMESTAMP>
+        <DATETIME>2016-01-14T08:18:43Z</DATETIME>
+    </OBSERVED_TIME>
+    <SEQUENCE_NUMBER>0</SEQUENCE_NUMBER>
+    <STATUS Author_Xpath="/BGP_MONITOR_MESSAGE/MONITOR">
+        <TYPE>SKIP_AHEAD</TYPE>
+        <MESSAGE>7 messages were skipped in queue LabelQueue</MESSAGE>
+    </STATUS>
+</BGP_MONITOR_MESSAGE>
+<BGP_MONITOR_MESSAGE xmlns:xsi="http://www.w3.org/2001/XMLSchema" xmlns="urn:ietf:params:xml:ns:bgp_monitor" xmlns:bgp="urn:ietf:params:xml:ns:xfb" xmlns:ne="urn:ietf:params:xml:ns:network_elements">
+    <MONITOR>
+        <ADDRESS afi="0"></ADDRESS>
+        <PORT>0</PORT>
+        <ASN4>0</ASN4>
+    </MONITOR>
+    <OBSERVED_TIME precision="false">
+        <TIMESTAMP>1452759524</TIMESTAMP>
+        <DATETIME>2016-01-14T08:18:44Z</DATETIME>
+    </OBSERVED_TIME>
+    <SEQUENCE_NUMBER>0</SEQUENCE_NUMBER>
+    <STATUS Author_Xpath="/BGP_MONITOR_MESSAGE/MONITOR">
+        <TYPE>SKIP_AHEAD</TYPE>
+        <MESSAGE>3 messages were skipped in queue LabelQueue</MESSAGE>
+    </STATUS>
+</BGP_MONITOR_MESSAGE>

@@ -1,0 +1,54 @@
+<BGP_MONITOR_MESSAGE xmlns:bgp="urn:ietf:params:xml:ns:xfb" xmlns:ne="urn:ietf:params:xml:ns:network_elements" xmlns:xsi="http://www.w3.org/2001/XMLSchema" xmlns="urn:ietf:params:xml:ns:bgp_monitor">
+    <SOURCE>
+        <ADDRESS afi="1">129.82.138.6</ADDRESS>
+        <PORT>179</PORT>
+        <ASN2>6447</ASN2>
+    </SOURCE>
+    <DEST>
+        <ADDRESS afi="0">ipv4any</ADDRESS>
+        <PORT>179</PORT>
+        <ASN2>64514</ASN2>
+    </DEST>
+    <MONITOR>
+        <ADDRESS afi="0">ipv4any</ADDRESS>
+        <PORT>0</PORT>
+        <ASN4>0</ASN4>
+    </MONITOR>
+    <OBSERVED_TIME precision="false">
+        <TIMESTAMP>1452586944</TIMESTAMP>
+        <DATETIME>2016-01-12T08:22:24Z</DATETIME>
+    </OBSERVED_TIME>
+    <SEQUENCE_NUMBER>1471852783</SEQUENCE_NUMBER>
+    <COLLECTION>TABLE_DUMP</COLLECTION>
+    <STATUS Author_Xpath="/BGP_MONITOR_MESSAGE/MONITOR">
+        <TYPE>FSM_STATE_CHANGE
+        </TYPE>
+    </STATUS>
+</BGP_MONITOR_MESSAGE>
+<BGP_MONITOR_MESSAGE xmlns:bgp="urn:ietf:params:xml:ns:xfb" xmlns:ne="urn:ietf:params:xml:ns:network_elements" xmlns:xsi="http://www.w3.org/2001/XMLSchema" xmlns="urn:ietf:params:xml:ns:bgp_monitor">
+    <SOURCE>
+        <ADDRESS afi="1">129.82.138.6</ADDRESS>
+        <PORT>179</PORT>
+        <ASN2>6447</ASN2>
+    </SOURCE>
+    <DEST>
+        <ADDRESS afi="0">ipv4any</ADDRESS>
+        <PORT>179</PORT>
+        <ASN2>64514</ASN2>
+    </DEST>
+    <MONITOR>
+        <ADDRESS afi="0">ipv4any</ADDRESS>
+        <PORT>0</PORT>
+        <ASN4>0</ASN4>
+    </MONITOR>
+    <OBSERVED_TIME precision="false">
+        <TIMESTAMP>1452586944</TIMESTAMP>
+        <DATETIME>2016-01-12T08:22:24Z</DATETIME>
+    </OBSERVED_TIME>
+    <SEQUENCE_NUMBER>1471852784</SEQUENCE_NUMBER>
+    <COLLECTION>TABLE_DUMP</COLLECTION>
+    <STATUS Author_Xpath="/BGP_MONITOR_MESSAGE/MONITOR">
+        <TYPE>FSM_STATE_CHANGE
+        </TYPE>
+    </STATUS>
+</BGP_MONITOR_MESSAGE>
