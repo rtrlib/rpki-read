@@ -2,10 +2,54 @@ import logging
 import time
 
 from bson.son import SON
+from bson.code import Code
 from datetime import datetime, timedelta
 from math import sqrt
 from pymongo import MongoClient, DESCENDING, ASCENDING
 from settings import BULK_TIMEOUT, BULK_MAX_OPS
+
+def output_latest(dbconnstr):
+    """Generate and store latest validation results in database"""
+    logging.debug ("CALL output_latest, with mongodb: " +dbconnstr)
+    # open db connection
+    client = MongoClient(dbconnstr)
+    db = client.get_default_database()
+    f_map = Code("function() {"
+                "  var key = this.prefix;"
+                "  var value = {timestamp: this.timestamp, type: this.type, validated_route: null};"
+                "  if (this.type == 'announcement') {"
+                "    value['validated_route'] = this.validated_route;"
+                "  }"
+                "  emit (key, value);"
+                "}")
+    f_reduce = Code("function (key, values) {"
+                "  var robj = { timestamp: 0, type: null, validated_route: null};"
+                "  values.forEach(function(value) {"
+                "    if ((value != null) && (value.timestamp > robj.timestamp)) {"
+                "      robj.timestamp = value.timestamp;"
+                "      robj.type = value.type;"
+                "      if (value.type == 'announcement') {"
+                "        robj.validated_route = value.validated_route;"
+                "      }"
+                "      else {"
+                "        robj.validated_route = null;"
+                "      }"
+                "    }"
+                "  } );"
+                "  return robj;"
+                "}")
+    last_validity_count = 0
+    while True:
+        if "validity" in db.collection_names() and db.validity.count() > last_validity_count:
+            try:
+                db.validity.map_reduce( f_map,
+                                        f_reduce,
+                                        out=SON([("replace","validity_latest")]),
+                                        )
+            except Exception, e:
+                logging.exception ("MapReduce failed with: " + e.message)
+        # endif
+        last_validity_count = db.validity.count()
 
 def output_stat(dbconnstr, interval):
     """Generate and store validation statistics in database"""
@@ -21,26 +65,19 @@ def output_stat(dbconnstr, interval):
         stats['num_InvalidAS'] = 0
         stats['num_InvalidLength'] = 0
         stats['num_NotFound'] = 0
-        if "validity" in db.collection_names() and db.validity.count() > 0:
+        if "validity_latest" in db.collection_names() and db.validity_latest.count() > 0:
             try:
                 pipeline = [
-                    { "$sort": SON( [ ( "prefix", ASCENDING), ("timestamp", DESCENDING ) ] ) },
-                    { "$group": {   "_id": "$prefix",
-                                    "timestamp": { "$first": "$timestamp" },
-                                    "validity": { "$first": "$validated_route.validity.state"},
-                                    "type" : { "$first" : "$type" }
-                                }
-                    },
-                    { "$match": { 'type' : 'announcement' } },
-                    { "$group": { "_id": "$validity", "count": { "$sum": 1} } }
+                    { "$match": { 'value.type': 'announcement'} },
+                    { "$group": { "_id": "$value.validated_route.validity.state", "count": { "$sum": 1} } }
                 ]
-                results = list(db.validity.aggregate( pipeline ))
+                results = list(db.validity_latest.aggregate( pipeline ))
                 for i in range(0,len(results)):
                     stats["num_"+results[i]['_id']] = results[i]['count']
-                ts_tmp = db.validity.find_one(projection={'timestamp': True, '_id': False}, sort=[('timestamp', -1)])['timestamp']
+                ts_tmp = db.validity_latest.find_one(projection={'value.timestamp': True, '_id': False}, sort=[('value.timestamp', -1)])['value']['timestamp']
                 stats['ts'] = int(ts_tmp)
                 if stats['ts'] != 'now':
-                    db.validity_stats.insert_one(stats)
+                    db.validity_stats.replace_one({'ts': stats['ts']}, stats, True)
             except Exception, e:
                 logging.exception ("QUERY failed with: " + e.message)
 
@@ -54,6 +91,7 @@ def output_data(dbconnstr, queue, dropdata):
     if dropdata:
         db.validity.drop()
         db.validity_stats.drop()
+        db.validity_latest.drop()
     # end dropdata
     bulk = db.validity.initialize_unordered_bulk_op()
     bulk_len = 0
