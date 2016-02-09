@@ -61,6 +61,7 @@ def stats():
     table_all = list(table)
     table_all.append([ 'Not Found', l_stats['num_NotFound'] ])
     l_stats['table_all'] = table_all
+    l_stats['source'] = config.BGPMON_SOURCE
     return render_template("stats.html", stats=l_stats)
 
 ## table handler

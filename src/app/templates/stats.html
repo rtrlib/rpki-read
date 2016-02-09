@@ -93,7 +93,7 @@
                 <div class="panel panel-default">
                     <div class="panel-heading">
                         <h3>Latest validation results</h3>
-                        <h4> <span class="label label-primary">{{ stats.latest_ts }}</span></h4>
+                        <h4> Timestamp: <span class="label label-primary">{{ stats.latest_ts }}</span> <span class="pull-right">BGP Source: <span class="label label-primary">{{ stats.source }}</span></span></h4>
                     </div>
                     <ul class="list-group">
                     <li class="clearfix lead list-group-item">
@@ -111,6 +111,10 @@
                     <li class="clearfix lead list-group-item">
                         <span class="label label-danger"># {{ stats.num_InvalidAS }}</span>
                         <span class="pull-right">Invalid AS</span>
+                    </li>
+                    <li class="clearfix lead list-group-item">
+                        <span class="label label-primary"># {{ stats.num_NotFound + stats.num_Valid + stats.num_InvalidAS + stats.num_InvalidLength }}</span>
+                        <span class="pull-right">Total</span>
                     </li>
                     </ul>
                 </div>

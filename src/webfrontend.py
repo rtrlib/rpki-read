@@ -4,5 +4,6 @@ import sys
 sys.path.append(os.path.dirname(__name__))
 
 from app import app
+from settings import *
 
-app.run(host='0.0.0.0',debug=True)
+app.run(host=default_webfrontend['host'], port=default_webfrontend['port'], debug=True)

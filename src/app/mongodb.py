@@ -2,6 +2,7 @@ import logging
 
 from bson.son import SON
 from datetime import datetime
+import time
 from pymongo import MongoClient, DESCENDING, ASCENDING
 
 def get_validation_stats(dbconnstr):
@@ -24,8 +25,9 @@ def get_validation_stats(dbconnstr):
             results = list(db.validity_latest.aggregate( pipeline ))
             for i in range(0,len(results)):
                 stats["num_"+results[i]['_id']] = results[i]['count']
-            stats['stats_all'] = list(db.validity_stats.find({},{'_id':0}).sort('ts', DESCENDING).limit(1440))
-            ts_tmp = db.validity_latest.find_one(projection={'value.timestamp': True, '_id': False}, sort=[('value.timestamp', -1)])['value']['timestamp']
+            ts24 = int(time.time()) - (3600*24) # last 24h
+            stats['stats_all'] = list(db.validity_stats.find({'ts': {'$gt': ts24}},{'_id':0}).sort('ts', DESCENDING))
+            ts_tmp = db.validity_latest.find_one(projection={'value.timestamp': True, '_id': False}, sort=[('value.timestamp', DESCENDING)])['value']['timestamp']
             stats['latest_ts'] = datetime.fromtimestamp(int(ts_tmp)).strftime('%Y-%m-%d %H:%M:%S')
         except Exception, e:
             logging.exception ("QUERY failed with: " + e.message)
