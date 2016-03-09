@@ -6,7 +6,7 @@ for the database, if you want). We recommend using _virtualenv_ with Python and
 to use _pip_ to install required libraries within this environment to keep your
 local systems Python installation untouched.
 
-## backend
+## Backend
 
 The PROVR backend consists of 3 components:
 
@@ -53,7 +53,7 @@ fill the database with all currently known IP prefixes and their origin AS,
 including validation. To activate and use this feature specify the RIB XML
 stream port using the additional '-r <rib port>' parameter.
 
-## frontend
+## Frontend
 
 The PROVR monitoring frontend provides a web GUI to view validation stats and
 results of currently announced IP prefixes and the respective origin AS.
@@ -61,9 +61,9 @@ results of currently announced IP prefixes and the respective origin AS.
 ### requirements
 
 The frontend uses _Flask_ for all the web stuff, _netaddr_ to parse IP prefixes
-and addresses, and _pymongo_ or _psycopg2_ for the database connection. Besides
-that you need access to the database of the PROVR backend, i.e., its URI and
-authentication params (if required).
+and addresses, and _pymongo_ for the database connection. Besides that you need
+access to the database of the PROVR backend, i.e., its URI and authentication
+params (if required).
 
 ### run
 
