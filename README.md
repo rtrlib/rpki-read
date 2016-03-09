@@ -1,9 +1,11 @@
-# PROVR - PRefix Origin Validation in Realtime
+# PROVR
 
-The PRefix Origin Validation in Realtime (PROVR) aims to provide a consistent
-(and live) view on the RPKI validation state of currently announced IP prefixes.
-That is, it verifies association of an IP prefix and its BGP origin AS
-(autonomous system). Resulting validation states are:
+__PRefix Origin Validation in Realtime__
+
+The PRefix Origin Validation in Realtime (PROVR) framework aims to provide a
+consistent (and live) view on the RPKI validation state of currently announced
+IP prefixes. That is, it verifies association of an IP prefix and its BGP origin
+AS (autonomous system). Resulting validation states are:
 
 * _NotFound_, if no RPKI entry exists for a prefix
 * _Valid_, if at least one matching entry (ROA) was found in the RPKI database
