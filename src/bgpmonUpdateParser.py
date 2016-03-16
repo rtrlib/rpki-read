@@ -134,8 +134,6 @@ def recv_bgpmon_rib(host, port, queue):
             if re.search('TABLE_STOP', msg):
                 logging.info("found TABLE_STOP in XML RIB stream.")
                 parse = False
-                run = False
-                break
             stream = '</BGP_MONITOR_MESSAGE>'.join(messages[1:])
             # parse RIB message if parsing is enabled
             if parse:
@@ -143,7 +141,7 @@ def recv_bgpmon_rib(host, port, queue):
                 if result:
                     queue.put(result)
             # start RIB parsing after TABLE_START message
-            if re.search('TABLE_START', msg):
+            elif re.search('TABLE_START', msg):
                 logging.info("found TABLE_START in XML RIB stream.")
                 parse = True
 

@@ -12,23 +12,29 @@
             html_dropdown += '" data-toggle="dropdown" area-haspopup="true" area-expanded="true">';
             html_dropdown += 'Show ('+num_roas.toString()+') <span class="caret"></span></button>';
             html_dropdown += '<ul class="dropdown-menu" style="padding:5px" area-labelledby="'+index+'">';
-            html_dropdown += '<li class="dropdown-header">matched</li>';
-            for (m in value.matched) {
-                html_dropdown += '<li>';
-                html_dropdown += '<span>'+value.matched[m].prefix+' - '+value.matched[m].max_length+', '+value.matched[m].asn+'</span>';
-                html_dropdown += '</li>';
+            if (value.matched.length > 0) {
+                html_dropdown += '<li class="dropdown-header">matched</li>';
+                for (m in value.matched) {
+                    html_dropdown += '<li>';
+                    html_dropdown += '<span>'+value.matched[m].prefix+' - '+value.matched[m].max_length+', '+value.matched[m].asn+'</span>';
+                    html_dropdown += '</li>';
+                }
             }
-            html_dropdown += '<li class="dropdown-header">unmatched Length</li>';
-            for (m in value.unmatched_length) {
-                html_dropdown += '<li>';
-                html_dropdown += '<span>'+value.unmatched_length[m].prefix+' - '+value.unmatched_length[m].max_length+', '+value.unmatched_length[m].asn+'</span>';
-                html_dropdown += '</li>';
+            if (value.unmatched_length.length > 0) {
+                html_dropdown += '<li class="dropdown-header">unmatched Length</li>';
+                for (m in value.unmatched_length) {
+                    html_dropdown += '<li>';
+                    html_dropdown += '<span>'+value.unmatched_length[m].prefix+' - '+value.unmatched_length[m].max_length+', '+value.unmatched_length[m].asn+'</span>';
+                    html_dropdown += '</li>';
+                }
             }
-            html_dropdown += '<li class="dropdown-header">unmatched AS</li>';
-            for (m in value.unmatched_as) {
-                html_dropdown += '<li>';
-                html_dropdown += '<span>'+value.unmatched_as[m].prefix+' - '+value.unmatched_as[m].max_length+', '+value.unmatched_as[m].asn+'</span>';
-                html_dropdown += '</li>';
+            if (value.unmatched_as.length > 0) {
+                html_dropdown += '<li class="dropdown-header">unmatched AS</li>';
+                for (m in value.unmatched_as) {
+                    html_dropdown += '<li>';
+                    html_dropdown += '<span>'+value.unmatched_as[m].prefix+' - '+value.unmatched_as[m].max_length+', '+value.unmatched_as[m].asn+'</span>';
+                    html_dropdown += '</li>';
+                }
             }
             html_dropdown += '</ul></div>';
             return html_dropdown;

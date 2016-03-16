@@ -15,8 +15,7 @@ from datetime import datetime
 from subprocess import PIPE, Popen
 
 # internal imports
-from mongodb import output_data, output_stat, output_latest
-from purgeNotFound import purge_notfound
+from mongodb import output_data, output_stat, output_latest, archive_or_purge, archive_clean
 from settings import *
 
 def main():
@@ -31,7 +30,7 @@ def main():
                         help='MongoDB connection parameters.',
                         type=str, required=True)
     parser.add_argument('-p', '--purge',
-                        help='Purge expired NotFound validation results.',
+                        help='Purge expired validation results (Default: archive).',
                         action='store_true', default=False)
 
     args = vars(parser.parse_args())
@@ -59,22 +58,25 @@ def main():
     output_latest_p.start()
 
     # thread3: generate stats from database
-    stats_interval = STATS_TIMEOUT
+    stats_interval = DOSTATS_INTERVAL
     if stats_interval < 1:
         stats_interval = 60
     output_stat_p = mp.Process( target=output_stat,
                                 args=(dbconnstr,stats_interval))
     output_stat_p.start()
 
-    # thread4: purge old validation results with NotFound [optional]
-    # NOTE: if enable, you cannot recover all historic validation states
-    if args['purge']:
-        purge_interval = PURGE_TIMEOUT
-        if purge_interval < 1:
-            purge_interval = 60
-        purge_p = mp.Process(   target=purge_notfound,
-                                args=(dbconnstr,purge_interval))
-        purge_p.start()
+    # thread4: periodically archive old validation results
+    archive_interval = SERVICE_INTERVAL
+    if archive_interval < 1:
+        archive_interval = 300
+    archive_p = mp.Process( target=archive_or_purge,
+                            args=(dbconnstr, archive_interval, args['purge']))
+    archive_p.start()
+
+    if not args['purge']:
+        cleanup_p = mp.Process( target=archive_clean,
+                                args=(dbconnstr, archive_interval))
+        cleanup_p.start()
 
     # main loop, read data from STDIN to be stored in database
     counter = 0

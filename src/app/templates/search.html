@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block script %}
+    <link href="/static/css/bootstrap-table.css" rel="stylesheet">
+{% endblock %}
+{% block content %}
+    <script src="/static/js/bootstrap-table.js"></script>
+    <div class="row">
+        <div class="col-xs-12">
+            <div class="panel panel-{{config.color|safe}}">
+                <div class="panel-heading">
+                    <h3>Overview on {{ config.prefix|safe }} results</h3>
+                </div>
+                <table  id="table-pagination"
+                        class="table table-striped"
+                        data-url="{{ config.url|safe }}"
+                        data-height="80%"
+                        data-pagination="true"
+                        data-search="true"
+                        data-toggle="table">
+                    <thead>
+                        <tr>
+                            <th data-field="timestamp" data-align="left"   data-sortable="true">Timestamp</th>
+                            <th data-field="prefix" data-align="left"   data-sortable="true">Prefix</th>
+                            <th data-field="state" data-align="right"  data-sortable="true">State</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+        </div>
+    </div>
+{% endblock %}

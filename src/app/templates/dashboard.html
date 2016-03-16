@@ -92,7 +92,9 @@
             <div class="col-xs-12">
                 <div class="panel panel-default">
                     <div class="panel-heading">
-                        <h3>Latest validation results</h3>
+                        <h1>Dashboard</h1>
+                        <p>Overview on latest RPKI validation results of IP prefix to BGP origin AS association.</p>
+                        <hr>
                         <h4> Timestamp: <span class="label label-primary">{{ stats.latest_ts }}</span> <span class="pull-right">BGP Source: <span class="label label-primary">{{ stats.source }}</span></span></h4>
                     </div>
                     <ul class="list-group">
@@ -124,11 +126,9 @@
             <div class="col-md-6 col-xs-12"><div class="panel panel-default">
                 <div class="panel-heading">
                     <h3>All known origins</h3>
-                    <h4><span class="label label-primary"># {{ stats.num_NotFound + stats.num_Valid + stats.num_InvalidAS + stats.num_InvalidLength }}</span></h4>
                 </div>
                 <div class="panel-body">
-                    <p></p>
-                    <h4>Relative validation results</h4>
+                    <h4>Relative validation results <span class="pull-right"><span class="label label-primary"># {{ stats.num_NotFound + stats.num_Valid + stats.num_InvalidAS + stats.num_InvalidLength }}</span></span> </h4>
                     <div id="piechart_all"></div>
                     <h4>Last 24 hours</h4>
                     <div id="linechart_all"></div>
@@ -137,11 +137,9 @@
             <div class="col-md-6 col-xs-12"><div class="panel panel-default">
                 <div class="panel-heading">
                     <h3>Origins with ROA</h3>
-                    <h4><span class="label label-primary"># {{ stats.num_Valid + stats.num_InvalidAS + stats.num_InvalidLength }}</span></h4>
                 </div>
                 <div class="panel-body">
-                    <p></p>
-                    <h4>Relative validation results</h4>
+                    <h4>Relative validation results <span class="pull-right"><span class="label label-primary"># {{ stats.num_Valid + stats.num_InvalidAS + stats.num_InvalidLength }}</span></span> </h4>
                     <div id="piechart_roa"></div>
                     <h4>Last 24 hours</h4>
                     <div id="linechart_roa"></div>

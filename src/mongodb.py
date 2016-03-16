@@ -10,7 +10,7 @@ from settings import BULK_TIMEOUT, BULK_MAX_OPS
 
 def output_latest(dbconnstr):
     """Generate and store latest validation results in database"""
-    logging.debug ("CALL output_latest, with mongodb: " +dbconnstr)
+    logging.info ("CALL output_latest, with mongodb: " +dbconnstr)
     # open db connection
     client = MongoClient(dbconnstr)
     db = client.get_default_database()
@@ -40,7 +40,7 @@ def output_latest(dbconnstr):
                 "}")
     last_validity_count = 0
     while True:
-        if "validity" in db.collection_names() and db.validity.count() > last_validity_count:
+        if "validity" in db.collection_names() and db.validity.count() != last_validity_count:
             try:
                 db.validity.map_reduce( f_map,
                                         f_reduce,
@@ -53,7 +53,7 @@ def output_latest(dbconnstr):
 
 def output_stat(dbconnstr, interval):
     """Generate and store validation statistics in database"""
-    logging.debug ("CALL output_stat, with mongodb: " +dbconnstr)
+    logging.info ("CALL output_stat, with mongodb: " +dbconnstr)
     # open db connection
     client = MongoClient(dbconnstr)
     db = client.get_default_database()
@@ -125,3 +125,87 @@ def output_data(dbconnstr, queue, dropdata):
             finally:
                 bulk = db.validity.initialize_unordered_bulk_op()
                 bulk_len = 0
+
+def archive_or_purge(dbconnstr, interval, purge):
+    """Archive or purge old, expired valitdation results in database"""
+    logging.info ("CALL archive_or_purge, with mongodb: " +dbconnstr)
+    # open db connection
+    client = MongoClient(dbconnstr)
+    db = client.get_default_database()
+    while(True):
+        if not purge:
+            bulkInsert = db.archive.initialize_unordered_bulk_op()
+        bulkRemove = db.validity.initialize_unordered_bulk_op()
+        counter = 0
+        # archive old NotFound entries
+        if "validity" in db.collection_names() and db.validity.count() > 0:
+            try:
+                pipeline = [
+                    { "$group": { "_id": '$prefix', "plist": { "$push" : { "pid": "$_id", "timestamp": "$timestamp" } }, "maxts": {"$max" : '$timestamp'} } },
+                    { "$unwind": "$plist" },
+                    { "$project": {"mark": { "$cond": [ { "$lt": [ "$plist.timestamp", "$maxts" ] }, "true", "false" ] }, "_id" : '$plist.pid', 'maxts': '$maxts', 'timestamp': '$plist.timestamp'} },
+                    { "$match": {'mark': "true"} },
+                    { "$limit": BULK_MAX_OPS}
+                ]
+                marked = db.validity.aggregate(pipeline)
+                for p in marked:
+                    counter += 1
+                    if not purge:
+                        bulkInsert.insert(db.validity.find_one({"_id": p['_id']}))
+                    bulkRemove.find({"_id": p['_id']}).remove_one()
+                if counter > 0:
+                    bulkRemove.execute()
+                    if not purge:
+                        bulkInsert.execute()
+            except Exception, e:
+                logging.exception ("archive_or_purge failed with: " + e.message)
+        if counter < (BULK_MAX_OPS * 0.8):
+            time.sleep(interval)
+
+def archive_clean(dbconnstr, interval):
+    logging.info ("CALL archive_clean, with mongodb: " +dbconnstr)
+    client = MongoClient(dbconnstr)
+    db = client.get_default_database()
+    while(True):
+        if "archive" in db.collection_names() and db.archive.count() > 0:
+            try:
+                prefixes = db.archive.distinct('prefix')
+            except Exception, e:
+                logging.exception ("archive_clean, distinct failed with: " + e.message)
+            else:
+
+                for p in prefixes:
+                    counter = 0
+                    bulkRemove = db.archive.initialize_unordered_bulk_op()
+                    try:
+                        states = db.archive.find({"prefix": p}, sort=[('timestamp', ASCENDING)])
+                    except Exception, e:
+                        logging.exception ("archive_clean, find failed with: " + e.message)
+                    else:
+                        s1 = None
+                        for s2 in states:
+                            if s1 != None:
+                                logging.debug(s1)
+                                logging.debug(s2)
+                                if (s1['type'] != 'withdraw') and (s2['type'] != 'withdraw') and (s1['validated_route']['validity']['state'] == s2['validated_route']['validity']['state']):
+                                    counter += 1
+                                    logging.debug("remove 1")
+                                    bulkRemove.find({'_id': s1['_id']}).remove_one()
+                                #end if
+                            #end if
+                            s1 = s2
+                        # end for
+                    #end try
+                    if counter > 0:
+                        try:
+                            logging.info("archive bulkRemove for prefix: "+p)
+                            bulkRemove.execute()
+                        except Exception, e:
+                            logging.exception ("archive_clean, bulkRemove failed with: " + e.message)
+                        #end try
+                    #end if
+                #end for
+            #end try
+        #end if
+        time.sleep(interval)
+    #end while
