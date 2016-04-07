@@ -6,6 +6,29 @@ for the database, if you want). We recommend using _virtualenv_ with Python and
 to use _pip_ to install required libraries within this environment to keep your
 local systems Python installation untouched.
 
+## Preliminaries
+
+This software is under development and testing on Linux Debian 8 (Jessie).
+
+On Debian the following packages can be installed via apt-get or aptitude:
+
+ - libxml2-dev,         needed by python for xml parsing and bgpmon
+ - python-dev,          needed to build and install python libraries via pip
+ - python-pip,          a package manager for python
+ - python-virtualenv,   run python code in a change-root like environment
+
+additional, but optional:
+ - nginx,               a light webserver to demonstrate RPKI verification
+ - screen,              terminal/shell multiplexer
+ - vim,                 the editor
+
+Install shutcut:
+
+    # apt-get install libxml2-dev python-dev python-pip python-virtualenv
+    # apt-get install nginx screen vim
+
+On other Linux Distros search for equivalents in their package-management.
+
 ## Backend
 
 The PROVR backend consists of 3 components:
@@ -32,6 +55,9 @@ _pymongo_.
 Besides that you need access to a [BGPmon](http://www.bgpmon.io) instance to
 receive its BGP update stream.
 And you will also need the URL of a RPKI cache for the validation procedure.
+
+If you want to install and setup your own BGPmon instance see below for further
+details.
 
 ### run
 
@@ -76,3 +102,20 @@ python webfrontend.py
 
 The webfrontend runs on port 'localhost:5000' you may alter the port or setup
 a webproxy (e.g. 'nginx') to redirect traffic.
+
+## BGPmon
+
+At the moment `bgpmon` cannot be found in standard package repos. So you
+need to compile and install it from scratch. Its source code can be downloaded
+[here](http://www.bgpmon.io/download.html).
+
+Compile with `./configure && make`, optional `sudo make install`.
+
+_Note_: there is bug in bgpmon-7.4 causing segfaults when connecting to multiple
+bgp peers, but luckily we provide a patch for that. Apply the patch as follows:
+
+    $ cd /path/to/bgpmon-7.4-source
+    $ patch -p1 < /path/to/provr/src/bgpmon/createSessionStruct.patch
+    $ ./configure
+    $ make
+    $ sudo make install

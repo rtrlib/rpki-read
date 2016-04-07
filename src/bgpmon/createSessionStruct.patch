@@ -1,0 +1,55 @@
+diff -ur bgpmon-7.4/Labeling/rtable.c bgpmon-7.4a/Labeling/rtable.c
+--- bgpmon-7.4/Labeling/rtable.c	2015-01-24 20:32:50.633859590 +0100
++++ bgpmon-7.4a/Labeling/rtable.c	2015-02-04 11:14:01.579741894 +0100
+@@ -74,10 +74,10 @@
+ 	uint32_t 	i;
+
+ 	Session_structp session = Sessions[sessionID];
+-	/* assert(session->prefixTable == NULL); */
+-
+-	/* Allocation Memory */
+-	session->prefixTable = malloc(sizeof(struct PrefixTableStruct));
++    if (session->prefixTable != NULL)
++        log_msg("createPrefixTable: warning. prefix table already present for session:%d.", sessionID);
++    else
++        session->prefixTable = malloc(sizeof(struct PrefixTableStruct));
+
+ 	if (session->prefixTable) {
+ 		/* Initialize prefix table */
+Nur in bgpmon-7.4/Labeling: rtable.c.old.
+diff -ur bgpmon-7.4/Peering/peersession.c bgpmon-7.4a/Peering/peersession.c
+--- bgpmon-7.4/Peering/peersession.c	2015-01-15 11:01:06.901819870 +0100
++++ bgpmon-7.4a/Peering/peersession.c	2015-02-04 11:14:01.583741894 +0100
+@@ -210,7 +210,10 @@
+ int
+ createSessionStruct()
+ {
+-
++    if (pthread_mutex_lock(&sessionArrayLock)) {
++        log_err("createSessionStruct: Unable to get lock\n");
++        return -1;
++    }
+ 	/* find a empty slot for this new session */
+ 	int 		i;
+ 	for (i = 0; i < MAX_SESSION_IDS; i++) {
+@@ -234,6 +237,11 @@
+ 	/* insert it into the array */
+ 	Sessions[i] = session;
+
++    if (pthread_mutex_unlock(&sessionArrayLock)) {
++        log_err("createSessionStruct: Unable to surrender lock\n");
++        return -1;
++    }
++
+ 	return i;
+ }
+
+@@ -247,7 +255,7 @@
+ createPeerSessionStruct(int peerID, int downCount, time_t lastDownTime)
+ {
+
+-	int 		i = createSessionStruct();
++    int i = createSessionStruct();
+
+ 	if (i < 0) {
+ 		return -1;
