@@ -18,14 +18,13 @@ On Debian the following packages can be installed via apt-get or aptitude:
  - python-virtualenv,   run python code in a change-root like environment
 
 additional, but optional:
- - nginx,               a light webserver to demonstrate RPKI verification
  - screen,              terminal/shell multiplexer
  - vim,                 the editor
 
 Install shutcut:
 
     # apt-get install libxml2-dev python-dev python-pip python-virtualenv
-    # apt-get install nginx screen vim
+    # apt-get install screen vim
 
 On other Linux Distros search for equivalents in their package-management.
 
@@ -120,4 +119,4 @@ bgp peers, but luckily we provide a patch for that. Apply the patch as follows:
     $ make
     $ sudo make install
 
-Ein Beispiel-Konfiguration für BGPmon findet sich in [bgpmon_config.txt](src/bgpmon/bgpmon_config.txt).
+A configuration example for BGPmon is provided in [bgpmon_config.txt](src/bgpmon/bgpmon_config.txt).
