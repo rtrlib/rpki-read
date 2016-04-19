@@ -1,0 +1,10 @@
+[Unit]
+Description=PROVR backend
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=</path/to/provr>/src/run_backend.sh
+
+[Install]
+WantedBy=multi-user.target

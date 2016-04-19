@@ -15,7 +15,7 @@ from datetime import datetime
 from subprocess import PIPE, Popen
 
 # internal imports
-from mongodb import output_data, output_stat, output_latest, archive_or_purge, archive_clean
+from mongodb import *
 from settings import *
 
 def main():
@@ -25,10 +25,10 @@ def main():
                         action='store_true', default=False)
     parser.add_argument('-l', '--loglevel',
                         help='Set loglevel [DEBUG,INFO,WARNING,ERROR,CRITICAL].',
-                        type=str, default='WARNING')
+                        type=str, default='ERROR')
     parser.add_argument('-m', '--mongodb',
                         help='MongoDB connection parameters.',
-                        type=str, required=True)
+                        type=str, default=DEFAULT_MONGO_DATABASE['uri'])
     parser.add_argument('-p', '--purge',
                         help='Purge expired validation results (Default: archive).',
                         action='store_true', default=False)

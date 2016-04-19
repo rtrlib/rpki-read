@@ -1,19 +1,19 @@
 # environment
-base_path = "."
-validator_path = base_path + "/util/cli-validator"
+BASE_PATH = "."
+VALIDATOR_PATH = BASE_PATH + "/util/cli-validator"
 
-validity_state = ['Valid','NotFound','Invalid','InvalidAS','InvalidLength']
-validity_descr = [  "At least one VRP Matches the Route Prefix",
+VALIDITY_STATE = ['Valid','NotFound','Invalid','InvalidAS','InvalidLength']
+VALIDITY_DESCR = [  "At least one VRP Matches the Route Prefix",
                     "No VRP Covers the Route Prefix",
                     "At least one VRP Matches the Route Prefix, but no VRP ASN or the Route Prefix length is greater than the maximum length allowed by VRP(s) matching this route origin ASN",
                     "At least one VRP Covers the Route Prefix, but no VRP ASN matches the route origin ASN",
                     "At least one VRP Covers the Route Prefix, but the Route Prefix length is greater than the maximum length allowed by VRP(s) matching this route origin ASN"]
 
 # connections
-default_cache_server = {"host": "rpki-validator.realmv6.org", "port": 8282}
-default_bgpmon_server = {"host": "localhost", "port": 50001}
-
-default_webfrontend = {"host": "0.0.0.0", "port": 5000}
+DEFAULT_CACHE_SERVER = {"host": "rpki-validator.realmv6.org", "port": 8282}
+DEFAULT_BGPMON_SERVER = {"host": "localhost", "uport": 50001, "rport": 50002}
+DEFAULT_MONGO_DATABASE = {"uri": "mongodb://localhost:27017/provr"}
+DEFAULT_WEB_SERVER = {"host": "0.0.0.0", "port": 5100}
 
 BULK_MAX_OPS = 10000
 BULK_TIMEOUT = 30

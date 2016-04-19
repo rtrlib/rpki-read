@@ -19,7 +19,7 @@ import xml.etree.ElementTree as ET
 from datetime import datetime
 from xml.dom import minidom
 
-from settings import default_bgpmon_server
+from settings import *
 
 def parse_bgp_message(xml):
     """Returns a dict of a parsed BGP XML update message"""
@@ -192,16 +192,16 @@ def main():
     parser = argparse.ArgumentParser(description='', epilog='')
     parser.add_argument('-l', '--loglevel',
                         help='Set loglevel [DEBUG,INFO,WARNING,ERROR,CRITICAL].',
-                        type=str, default='WARNING')
+                        type=str, default='ERROR')
     parser.add_argument('-a', '--addr',
                         help='Address or name of BGPmon host.',
-                        type=str, default=default_bgpmon_server['host'])
+                        type=str, default=DEFAULT_BGPMON_SERVER['host'])
     parser.add_argument('-p', '--port',
                         help='Port of BGPmon Update XML stream.',
-                        type=int, default=default_bgpmon_server['port'])
+                        type=int, default=DEFAULT_BGPMON_SERVER['uport'])
     parser.add_argument('-r', '--ribport',
                         help='Port of BGPmon RIB XML stream.',
-                        type=int, default=0)
+                        type=int, default=DEFAULT_BGPMON_SERVER['rport'])
     args = vars(parser.parse_args())
 
     numeric_level = getattr(logging, args['loglevel'].upper(), None)

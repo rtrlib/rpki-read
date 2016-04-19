@@ -102,6 +102,40 @@ python webfrontend.py
 The webfrontend runs on port 'localhost:5000' you may alter the port or setup
 a webproxy (e.g. 'nginx') to redirect traffic.
 
+## Apache and Systemd integration
+
+For a production deployment we recommend to integrate PROVR with _Apache_,
+instead of the python standalone webserver described in the previous section.
+The PROVR backend will run as a _Systemd_ service daemon, we provide the
+necessary scripts as well.
+
+In the following we describe Apache integration assuming the steps above are
+already followed through. First install Apache and its WSGI module (`mod_wsgi`)
+via package manager of your Linux OS, e.g., `apt` or `yum`. Afterwards proceed
+as follows:
+
+1. Edit `src/provr.wsgi` and replace the `</path/to/provr>` according to your deployment.
+2. Copy `etc/httpd/conf.d/provr_wsgi.conf` to the Apache config directory, e.g.,
+`/etc/httpd/conf.d/`. And again replace `</path/to/provr>` according to your
+deployment.
+3. Modify `src/settings.py` as required as well, if not already done.
+4. Set the absolute path to `README.md` in `src/app/views.py` (L 44)
+5. Modify `src/app/config.py` if required, e.g., match database connection.
+6. Copy _Systemd_ config for PROVR backend `etc/systemd/system/provr.service` to
+`/etc/systemd/system`
+7. Modify `/etc/systemd/system/provr.service` and replace `</path/to/provr>`.
+8. Enable PROVR service:
+```
+# systemctl daemon-reload
+# systemctl enable provr.service
+# systemctl start provr.service
+```
+9. Reload _Apache_:
+```
+# systemctl reload httpd
+```
+
+
 ## BGPmon
 
 At the moment `bgpmon` cannot be found in standard package repos. So you

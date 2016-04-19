@@ -74,8 +74,8 @@ def _get_validity(validation_result_string):
                     validity['reason'] = 'length'
             # END (if validity['code'] == 2)
         # END (if validity['code'] != 1)
-        validity['state'] = validity_state[validity['code']]
-        validity['description'] = validity_descr[validity['code']]
+        validity['state'] = VALIDITY_STATE[validity['code']]
+        validity['description'] = VALIDITY_DESCR[validity['code']]
     # END (if elif else)
     return validity
 
@@ -83,7 +83,7 @@ def validator(in_queue, out_queue, cache_host, cache_port):
     """The validation thread, this is where the work is done."""
     logging.info ("start validator thread")
     # start RPKI validation client process
-    cache_cmd = [validator_path, cache_host, cache_port]
+    cache_cmd = [VALIDATOR_PATH, cache_host, cache_port]
     validator_process = Popen(cache_cmd, stdin=PIPE, stdout=PIPE)
     logging.info ("run validator thread (%s:%s)" % (cache_host, cache_port))
     run = True
@@ -140,13 +140,13 @@ def main():
     parser = argparse.ArgumentParser(description='', epilog='')
     parser.add_argument('-l', '--loglevel',
                         help='Set loglevel [DEBUG,INFO,WARNING,ERROR,CRITICAL].',
-                        type=str, default='WARNING')
+                        type=str, default='ERROR')
     parser.add_argument('-a', '--addr',
                         help='Address or name of RPKI cache server.',
-                        default=default_cache_server['host'])
+                        default=DEFAULT_CACHE_SERVER['host'])
     parser.add_argument('-p', '--port',
                         help='Port of RPKI cache server.',
-                        default=default_cache_server['port'], type=int)
+                        default=DEFAULT_CACHE_SERVER['port'], type=int)
     parser.add_argument('-j', '--json',
                         help='Format JSON output nicely.',
                         action='store_true')

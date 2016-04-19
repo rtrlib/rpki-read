@@ -3,3 +3,4 @@ APScheduler
 markdown
 netaddr
 pymongo
+bson
