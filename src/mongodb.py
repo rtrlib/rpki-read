@@ -71,7 +71,7 @@ def output_stat(dbconnstr, interval):
                     { "$match": { 'value.type': 'announcement'} },
                     { "$group": { "_id": "$value.validated_route.validity.state", "count": { "$sum": 1} } }
                 ]
-                results = list(db.validity_latest.aggregate( pipeline ))
+                results = list(db.validity_latest.aggregate(pipeline, allowDiskUse=True ))
                 for i in range(0,len(results)):
                     stats["num_"+results[i]['_id']] = results[i]['count']
                 ts_tmp = db.validity_latest.find_one(projection={'value.timestamp': True, '_id': False}, sort=[('value.timestamp', -1)])['value']['timestamp']
@@ -147,7 +147,7 @@ def archive_or_purge(dbconnstr, interval, purge):
                     { "$match": {'mark': "true"} },
                     { "$limit": BULK_MAX_OPS}
                 ]
-                marked = db.validity.aggregate(pipeline)
+                marked = db.validity.aggregate(pipeline, allowDiskUse=True)
                 for p in marked:
                     counter += 1
                     if not purge:

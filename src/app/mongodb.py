@@ -23,7 +23,7 @@ def get_validation_stats(dbconnstr):
                 { "$match": { 'value.type': 'announcement'} },
                 { "$group": { "_id": "$value.validated_route.validity.state", "count": { "$sum": 1} } }
             ]
-            results = list(db.validity_latest.aggregate( pipeline ))
+            results = list(db.validity_latest.aggregate(pipeline, allowDiskUse=True ))
             for i in range(0,len(results)):
                 stats["num_"+results[i]['_id']] = results[i]['count']
             ts24 = int(time.time()) - (3600*24) # last 24h
