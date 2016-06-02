@@ -1,10 +1,10 @@
-# Setting up PROVR
+# Setting up RPKI READ
 
-Deploying the PROVR monitoring system is straight forward and easy, you can run
-backend and frontend on a single server or separately on distinct nodes (+ a node
-for the database, if you want). We recommend using _virtualenv_ with Python and
-to use _pip_ to install required libraries within this environment to keep your
-local systems Python installation untouched.
+Deploying the RPKI READ monitoring system is straight forward and easy, you can
+run backend and frontend on a single server or separately on distinct nodes
+(+ a node for the database, if you want). We recommend using _virtualenv_ with
+Python and to use _pip_ to install required libraries within this environment
+to keep your local systems Python installation untouched.
 
 ## Preliminaries
 
@@ -30,7 +30,7 @@ On other Linux Distros search for equivalents in their package-management.
 
 ## Backend
 
-The PROVR backend consists of 3 components:
+The RPKI READ backend consists of 3 components:
 
 1. the [parser](src/bgpmonUpdateParser.py), to extract prefix origins from a XML BGP update stream
 2. the [validator](src/validator.py), to validate prefix origins against an RPKI cache
@@ -38,17 +38,17 @@ The PROVR backend consists of 3 components:
 
 Each of these components is implemented as a standalone python tool, i.e., they
 run on their own and are interchangeable. They follow common UNIX tools, i.e,
-read input from STDIN and write to STDOUT if feasible. Thus, the complete PROVR
-backend is basically running these 3 tools in a chain.
+read input from STDIN and write to STDOUT if feasible. Thus, the complete RPKI
+READ backend is basically running these 3 tools in a chain.
 
-The validation results are stored in a database, PROVR currently uses a MongoDB.
-This database is also used by the web frontend to display validation results and
-statistics.
+The validation results are stored in a database, RPKI READ currently uses a
+MongoDB. This database is also used by the web frontend to display validation
+results and statistics.
 
 ### requirements
 
 The backend mostly uses standard Python libraries however to parse IP prefixes
-and addresses we use _netaddr_, and for the mongodb database PROVR requires
+and addresses we use _netaddr_, and for the mongodb database RPKI READ requires
 _pymongo_.
 
 Besides that you need access to a [BGPmon](http://www.bgpmon.io) instance to
@@ -80,20 +80,20 @@ stream port using the additional '-r <rib port>' parameter.
 
 ## Frontend
 
-The PROVR monitoring frontend provides a web GUI to view validation stats and
-results of currently announced IP prefixes and the respective origin AS.
+The RPKI READ monitoring frontend provides a web GUI to view validation stats
+and results of currently announced IP prefixes and the respective origin AS.
 
 ### requirements
 
 The frontend uses _Flask_ for all the web stuff, _netaddr_ to parse IP prefixes
 and addresses, and _pymongo_ for the database connection. Besides that you need
-access to the database of the PROVR backend, i.e., its URI and authentication
-params (if required).
+access to the database of the RPKI READ backend, i.e., its URI and
+authentication params (if required).
 
 ### run
 
-To initialize the frontend check its configuration params in [config.py](src/app/config.py),
-afterwards exec:
+To initialize the frontend check its configuration params in
+[config.py](src/app/config.py), afterwards exec:
 
 ```
 python webfrontend.py
@@ -104,9 +104,9 @@ a webproxy (e.g. 'nginx') to redirect traffic.
 
 ## Apache and Systemd integration
 
-For a production deployment we recommend to integrate PROVR with _Apache_,
+For a production deployment we recommend to integrate RPKI READ with _Apache_,
 instead of the python standalone webserver described in the previous section.
-The PROVR backend will run as a _Systemd_ service daemon, we provide the
+The RPKI READ backend will run as a _Systemd_ service daemon, we provide the
 necessary scripts as well.
 
 In the following we describe Apache integration assuming the steps above are
@@ -114,21 +114,23 @@ already followed through. First install Apache and its WSGI module (`mod_wsgi`)
 via package manager of your Linux OS, e.g., `apt` or `yum`. Afterwards proceed
 as follows:
 
-1. Edit `src/provr.wsgi` and replace the `</path/to/provr>` according to your deployment.
-2. Copy `etc/httpd/conf.d/provr_wsgi.conf` to the Apache config directory, e.g.,
-`/etc/httpd/conf.d/`. And again replace `</path/to/provr>` according to your
+1. Edit `src/rpki-read.wsgi` and replace the `</path/to/rpki-read>` according to
+your deployment.
+2. Copy `etc/httpd/conf.d/rpki_read_wsgi.conf` to the Apache config directory, e.g.,
+`/etc/httpd/conf.d/`. And again replace `</path/to/rpki-read>` according to your
 deployment.
 3. Modify `src/settings.py` as required as well, if not already done.
 4. Set the absolute path to `README.md` in `src/app/views.py` (L 44)
 5. Modify `src/app/config.py` if required, e.g., match database connection.
-6. Copy _Systemd_ config for PROVR backend `etc/systemd/system/provr.service` to
-`/etc/systemd/system`
-7. Modify `/etc/systemd/system/provr.service` and replace `</path/to/provr>`.
-8. Enable PROVR service:
+6. Copy _Systemd_ config for RPKI READ backend
+`etc/systemd/system/rpki-read.service` to `/etc/systemd/system`
+7. Modify `/etc/systemd/system/rpki-read.service` and replace
+`</path/to/rpki-read>`.
+8. Enable RPKI READ service:
 ```
 # systemctl daemon-reload
-# systemctl enable provr.service
-# systemctl start provr.service
+# systemctl enable rpki-read.service
+# systemctl start rpki-read.service
 ```
 9. Reload _Apache_:
 ```
@@ -148,9 +150,10 @@ _Note_: there is bug in bgpmon-7.4 causing segfaults when connecting to multiple
 bgp peers, but luckily we provide a patch for that. Apply the patch as follows:
 
     $ cd /path/to/bgpmon-7.4-source
-    $ patch -p1 < /path/to/provr/src/bgpmon/createSessionStruct.patch
+    $ patch -p1 < /path/to/rpki-read/src/bgpmon/createSessionStruct.patch
     $ ./configure
     $ make
     $ sudo make install
 
-A configuration example for BGPmon is provided in [bgpmon_config.txt](src/bgpmon/bgpmon_config.txt).
+A configuration example for BGPmon is provided in
+[bgpmon_config.txt](src/bgpmon/bgpmon_config.txt).

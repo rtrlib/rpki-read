@@ -20,6 +20,6 @@ prints debug messages to `STDOUT` interfering with the bgp-validator daemon.
 
 If any error is raised, please consult readme or build instructions of RTRlib.
 
-Copy cli-validator binary to PROVR
+Copy cli-validator binary to RPKI READ
 
-    $ cp tools/cli-validator <path/to/provr>/src/util/.
+    $ cp tools/cli-validator <path/to/rpki-read>/src/util/.

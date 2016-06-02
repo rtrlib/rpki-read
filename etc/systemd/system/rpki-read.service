@@ -1,10 +1,10 @@
 [Unit]
-Description=PROVR backend
+Description=RPKI READ backend
 After=network.target
 
 [Service]
 Type=simple
-ExecStart=</path/to/provr>/src/run_backend.sh
+ExecStart=</path/to/rpki-read>/src/run_backend.sh
 
 [Install]
 WantedBy=multi-user.target

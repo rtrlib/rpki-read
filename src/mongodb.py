@@ -167,6 +167,7 @@ def archive_or_purge(dbconnstr, interval, purge):
                 logging.exception ("archive_or_purge failed with: " + e.message)
         if archive_old != archive_str:
             archive_clean(dbconnstr, archive_old)
+            archive_old = archive_str
         if counter < (BULK_MAX_OPS * 0.8):
             time.sleep(interval)
 
