@@ -73,11 +73,6 @@ def main():
                             args=(dbconnstr, archive_interval, args['purge']))
     archive_p.start()
 
-    if not args['purge']:
-        cleanup_p = mp.Process( target=archive_clean,
-                                args=(dbconnstr, archive_interval))
-        cleanup_p.start()
-
     # main loop, read data from STDIN to be stored in database
     counter = 0
     while True:
