@@ -134,8 +134,7 @@ def archive_or_purge(dbconnstr, interval, purge):
     db = client.get_default_database()
     archive_old = ""
     while(True):
-        now = datetime.now()
-        archive_str = 'archive_'+str(now.year)+"_"+str(now.month)
+        archive_str = datetime.today().strftime("archive_%Y_w%W")
         if len(archive_old) < 1:
             archive_old = archive_str
         archive_col = db[archive_str]
@@ -175,47 +174,43 @@ def archive_clean(dbconnstr, archive_str):
     logging.info ("CALL archive_clean on "+archive_str+", with mongodb: " +dbconnstr)
     client = MongoClient(dbconnstr)
     db = client.get_default_database()
-    while(True):
-        if archive_str in db.collection_names() and db[archive_str].count() > 0:
-            archive_col = db['archive_str']
-            try:
-                prefixes = archarchive_colive.distinct('prefix')
-            except Exception, e:
-                logging.exception ("archive_clean, distinct failed with: " + e.message)
-            else:
-
-                for p in prefixes:
-                    counter = 0
-                    bulkRemove = archive_col.initialize_unordered_bulk_op()
-                    try:
-                        states = archive_col.find({"prefix": p}, sort=[('timestamp', ASCENDING)])
-                    except Exception, e:
-                        logging.exception ("archive_clean, find failed with: " + e.message)
-                    else:
-                        s1 = None
-                        for s2 in states:
-                            if s1 != None:
-                                logging.debug(s1)
-                                logging.debug(s2)
-                                if (s1['type'] != 'withdraw') and (s2['type'] != 'withdraw') and (s1['validated_route']['validity']['state'] == s2['validated_route']['validity']['state']):
-                                    counter += 1
-                                    logging.debug("remove 1")
-                                    bulkRemove.find({'_id': s1['_id']}).remove_one()
-                                #end if
+    if archive_str in db.collection_names() and db[archive_str].count() > 0:
+        archive_col = db[archive_str]
+        try:
+            prefixes = archive_col.distinct('prefix')
+        except Exception, e:
+            logging.exception ("archive_clean, distinct failed with: " + e.message)
+        else:
+            for p in prefixes:
+                counter = 0
+                bulkRemove = archive_col.initialize_unordered_bulk_op()
+                try:
+                    states = archive_col.find({"prefix": p}, sort=[('timestamp', ASCENDING)])
+                except Exception, e:
+                    logging.exception ("archive_clean, find failed with: " + e.message)
+                else:
+                    s1 = None
+                    for s2 in states:
+                        if s1 != None:
+                            logging.debug(s1)
+                            logging.debug(s2)
+                            if (s1['type'] != 'withdraw') and (s2['type'] != 'withdraw') and (s1['validated_route']['validity']['state'] == s2['validated_route']['validity']['state']):
+                                counter += 1
+                                logging.debug("remove 1")
+                                bulkRemove.find({'_id': s1['_id']}).remove_one()
                             #end if
-                            s1 = s2
-                        # end for
+                        #end if
+                        s1 = s2
+                    # end for
+                #end try
+                if counter > 0:
+                    try:
+                        logging.info("archive bulkRemove for prefix: "+p)
+                        bulkRemove.execute()
+                    except Exception, e:
+                        logging.exception ("archive_clean, bulkRemove failed with: " + e.message)
                     #end try
-                    if counter > 0:
-                        try:
-                            logging.info("archive bulkRemove for prefix: "+p)
-                            bulkRemove.execute()
-                        except Exception, e:
-                            logging.exception ("archive_clean, bulkRemove failed with: " + e.message)
-                        #end try
-                    #end if
-                #end for
-            #end try
-        #end if
-        time.sleep(interval)
-    #end while
+                #end if
+            #end for
+        #end try
+    #end if

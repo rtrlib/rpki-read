@@ -5,6 +5,7 @@ import calendar
 import json
 import logging
 import os
+import random
 import re
 import socket
 import string
@@ -98,12 +99,22 @@ def parse_bgp_message(xml):
     return bgp_message
 
 def _init_bgpmon_sock(host, port):
-    bm_sock =  socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    try:
-        bm_sock.connect((host,port))
-    except:
-        logging.critical ("Failed to connect to BGPmon XML RIB stream!")
-        sys.exit(1)
+    logging.debug ("CALL _init_bgpmon_sock")
+    bm_sock = None
+    ready = False
+    timeout = 0
+    while not ready:
+        bm_sock =  socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            bm_sock.connect((host,port))
+        except:
+            bm_sock.close()
+            backoff = pow(2,(timeout%6)+5)
+            timeout += 1
+            logging.critical ("Failed to connect to BGPmon XML RIB or UPDATE stream! Wait "+str(backoff)+"s and try again.")
+            time.sleep(backoff)
+        else:
+            ready = True
     return bm_sock
 
 def recv_bgpmon_rib(host, port, queue):
@@ -148,7 +159,7 @@ def recv_bgpmon_rib(host, port, queue):
     sock.close()
     return True
 
-def recv_bgpmon_messages(host, port, queue):
+def recv_bgpmon_updates(host, port, queue):
     """Read the BGP update XML stream of bgpmon"""
     logging.info ("CALL recv_bgpmon_updates (%s:%d)", host, port)
     # open connection
@@ -224,7 +235,7 @@ def main():
         ot.start()
         if args['ribport'] > 0:
             rt.start()
-        recv_bgpmon_messages(addr,port,output_queue)
+        recv_bgpmon_updates(addr,port,output_queue)
     except KeyboardInterrupt:
         logging.exception ("ABORT")
     finally:
