@@ -1,11 +1,11 @@
 # RPKI READ
 
-__RPKI Real time Dashboard__
+__The RPKI Real time Dashboard__
 
-The Real time Dashboard (READ) aims to provide a consistent (and live) view on
-the RPKI validation state of currently announced IP prefixes. That is, it
-verifies association of an IP prefix and its BGP origin AS (autonomous system)
-utilizing RPKI. Resulting validation states are:
+RPKI READ aims to provide a consistent (and live) view on the RPKI validation
+state of currently announced IP prefixes. That is, it verifies association of
+an IP prefix and its BGP origin AS (autonomous system) utilizing RPKI.
+Resulting validation states are:
 
 * _NotFound_, if no RPKI entry exists for a prefix
 * _Valid_, if at least one matching entry (ROA) was found in the RPKI database

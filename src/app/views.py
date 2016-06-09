@@ -103,15 +103,15 @@ def invalid_len_table_json():
 def search_json():
     search = request.args.get('search')
     validity_now = get_validation_prefix(config.DATABASE_CONN, search)
-    validity_old = get_validation_history(config.DATABASE_CONN, validity_now[0]['prefix'])
     ret = list()
     ret.append(validity_now[0])
-    cmp = ret[0]
-    for v in validity_old:
-        if v['type'] != cmp['type']:
-            ret.append(v)
-            cmp = v
-        elif (v['type'] == 'announcement') and ( (v['state'] != cmp['state']) or (v['origin'] != cmp['origin']) ):
-            ret.append(v)
-            cmp = v
+    # validity_old = get_validation_history(config.DATABASE_CONN, validity_now[0]['prefix'])
+    # cmp = ret[0]
+    # for v in validity_old:
+    #     if v['type'] != cmp['type']:
+    #         ret.append(v)
+    #         cmp = v
+    #     elif (v['type'] == 'announcement') and ( (v['state'] != cmp['state']) or (v['origin'] != cmp['origin']) ):
+    #         ret.append(v)
+    #         cmp = v
     return json.dumps(ret, indent=2, separators=(',', ': '))

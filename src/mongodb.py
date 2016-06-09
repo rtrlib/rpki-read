@@ -164,11 +164,14 @@ def archive_or_purge(dbconnstr, interval, purge):
                         bulkInsert.execute()
             except Exception, e:
                 logging.exception ("archive_or_purge failed with: " + e.message)
-        if archive_old != archive_str:
-            archive_clean(dbconnstr, archive_old)
-            archive_old = archive_str
-        if counter < (BULK_MAX_OPS * 0.8):
+            # end try
+        # end if validity
+        # if archive_old != archive_str:
+        #     archive_clean(dbconnstr, archive_old)
+        #     archive_old = archive_str
+        if counter < (BULK_MAX_OPS * 0.2):
             time.sleep(interval)
+    # end while
 
 def archive_clean(dbconnstr, archive_str):
     logging.info ("CALL archive_clean on "+archive_str+", with mongodb: " +dbconnstr)
