@@ -21,6 +21,7 @@ from datetime import datetime
 from xml.dom import minidom
 
 from settings import *
+from BGPmessage import *
 
 def parse_bgp_message(xml):
     """Returns a dict of a parsed BGP XML update message"""
@@ -64,37 +65,31 @@ def parse_bgp_message(xml):
         return None
 
     # init return struct
-    bgp_message = dict()
-    bgp_message['type'] = 'update'
-    bgp_message['source'] = src_peer
-    bgp_message['next_hop'] = None
-    bgp_message['timestamp'] = str(ts)
-    bgp_message['announce'] = list()
-    bgp_message['withdraw'] = list()
-    bgp_message['aspath'] = list()
+    bgp_message = BGPmessage(ts,'update')
+    bgp_message.set_source(src_peer)
 
     # add withdrawn prefixes
     withdraws = update.findall('.//{urn:ietf:params:xml:ns:xfb}WITHDRAW')
     for withdraw in withdraws:
         logging.debug ("BGP WITHDRAW %s by AS %s" % (withdraw.text,src_peer['asn']))
-        bgp_message['withdraw'].append(str(withdraw.text))
+        bgp_message.add_withdraw(withdraw.text)
 
     # add AS path
     asp = update.find('{urn:ietf:params:xml:ns:xfb}AS_PATH')
     if asp is not None:
         for asn in asp.findall('.//{urn:ietf:params:xml:ns:xfb}ASN2'):
-                bgp_message['aspath'].append(str(asn.text))
+            bgp_message.add_as_to_path(asn.text)
 
     # add next hop
     next_hop = update.find('{urn:ietf:params:xml:ns:xfb}NEXT_HOP')
     if next_hop is not None:
-        bgp_message['next_hop'] = next_hop.text
+        bgp_message.set_nexthop(next_hop.text)
 
     # add announced prefixes
     prefixes = update.findall('.//{urn:ietf:params:xml:ns:xfb}NLRI')
     for prefix in prefixes:
         logging.debug ("BGP ANNOUNCE %s by AS %s" % (prefix.text,src_peer['asn']))
-        bgp_message['announce'].append(str(prefix.text))
+        bgp_message.add_announce(prefix.text)
 
     return bgp_message
 
@@ -193,7 +188,7 @@ def output(queue):
         odata = queue.get()
         if (odata == 'STOP'):
             break
-        json_str = json.dumps(odata)
+        json_str = json.dumps(odata.__dict__)
         print json_str
         sys.stdout.flush()
     return True
