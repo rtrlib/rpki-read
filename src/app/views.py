@@ -75,7 +75,7 @@ def stats():
     table_all.append([ 'Not Found', dash_stats['num_NotFound'] ])
     dash_stats['table_all'] = table_all
     dash_stats['source'] = config.BGPMON_SOURCE
-    return render_template("stats.html", stats=l_stats)
+    return render_template("stats.html", stats=dash_stats)
 
 ## table handler
 @app.route('/valid')

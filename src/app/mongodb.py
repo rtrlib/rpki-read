@@ -8,6 +8,31 @@ from netaddr import *
 
 logging.basicConfig(level=logging.CRITICAL, format='%(asctime)s : %(levelname)s : %(message)s')
 
+def get_detailed_stats(dbconnstr):
+    client = MongoClient(dbconnstr)
+    db = client.get_default_database()
+    stats = dict()
+    if "validity_latest" in db.collection_names() and db.validity_latest.count() > 0:
+        try:
+            pipeline = [ {
+                "$group": {
+                    "_id": '$value.validated_route.route.prefix',
+                    "origins": {
+                        "$push" : {
+                            "asn": "$value.validated_route.route.origin_asn",
+                            "valitidy": "$value.validated_route.validity.state"
+                        }
+                    }
+                }
+            } ]
+            results = db.validity_latest.aggregate(pipeline, allowDiskUse=True)
+        except Exception, e:
+            logging.exception ("QUERY failed with: " + e.message)
+        else:
+            for r in results:
+                print str(r)
+    return stats
+
 def get_validation_stats(dbconnstr):
     client = MongoClient(dbconnstr)
     db = client.get_default_database()
