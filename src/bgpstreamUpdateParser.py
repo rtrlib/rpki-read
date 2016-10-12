@@ -16,9 +16,12 @@ import multiprocessing as mp
 
 from datetime import datetime, date, timedelta
 from _pybgpstream import BGPStream, BGPRecord, BGPElem
+from tzlocal import get_localzone
 
 from settings import *
 from BGPmessage import *
+
+rib_ts = -1
 
 # helper functions
 def valid_date(s):
@@ -39,7 +42,9 @@ def output(queue):
         print json_str
         sys.stdout.flush()
     return True
-def recv_bgpstream_updates(begin, until, collector,output_queue):
+
+def recv_bgpstream_rib(begin, until, collector, output_queue):
+    logging.info ("CALL recv_bgpstream_rib")
     # Create bgpstream
     stream = BGPStream()
     rec = BGPRecord()
@@ -48,6 +53,44 @@ def recv_bgpstream_updates(begin, until, collector,output_queue):
     stream.add_filter('record-type','updates')
     stream.add_interval_filter(begin,until)
 
+    # Start the stream
+    stream.start()
+    global rib_ts
+    while (stream.get_next_record(rec)):
+        if rec.status == 'valid':
+            elem = rec.get_next_elem()
+        else:
+            logging.warn("stream record invalid, skipping.")
+            continue
+        if rib_ts < 0:
+            rib_ts = rec.time
+        elif (rec.time > (rib_ts + RIB_TS_INTERVAL)):
+            logging.info("received full RIB table dump.")
+            break
+        while (elem):
+            bgp_message = BGPmessage(elem.time,'update')
+            bgp_message.add_announce(elem.fields['prefix'])
+            bgp_message.set_nexthop(elem.fields['next-hop'])
+            aspath = elem.fields['as-path'].split()
+            for a in aspath:
+                if not '{' in a: # ignore AS-SETs
+                    bgp_message.add_as_to_path(a)
+            output_queue.put(bgp_message)
+
+def recv_bgpstream_updates(begin, until, collector, output_queue):
+    logging.info ("CALL recv_bgpstream_updates")
+    # Create bgpstream
+    stream = BGPStream()
+    rec = BGPRecord()
+    # set filtering
+    stream.add_filter('collector', collector)
+    stream.add_filter('record-type','updates')
+    stream.add_interval_filter(begin,until)
+
+    # wait for first RIB table dump to complete
+    while (rib_ts < 0):
+        time.sleep(RIB_TS_INTERVAL/10)
+    time.sleep(RIB_TS_INTERVAL)
     # Start the stream
     stream.start()
     while (stream.get_next_record(rec)):
@@ -60,14 +103,15 @@ def recv_bgpstream_updates(begin, until, collector,output_queue):
         while (elem):
             logging.info(" -- Record Element Type: " + elem.type + ", TS: " + str(elem.time))
             bgp_message = BGPmessage(elem.time,'update')
-            if elem.type == 'announcement':
+            if elem.type.upper() == 'A':
                 bgp_message.add_announce(elem.fields['prefix'])
                 bgp_message.set_nexthop(elem.fields['next-hop'])
                 aspath = elem.fields['as-path'].split()
-                for a in aspath: # remove AS-SETs
-                    bgp_message.add_as_to_path(a)
+                for a in aspath:
+                    if not '{' in a: # ignore AS-SETs
+                        bgp_message.add_as_to_path(a)
                 output_queue.put(bgp_message)
-            elif elem.type == 'withdrawal':
+            elif elem.type.upper() == 'W':
                 bgp_message.add_withdraw(elem.fields['prefix'])
                 output_queue.put(bgp_message)
             elem = rec.get_next_elem()
@@ -97,20 +141,30 @@ def main():
     logging.basicConfig(level=numeric_level,
                         format='%(asctime)s : %(levelname)s : %(message)s')
 
-    ts_begin = int((datetime.now() - datetime(1970, 1, 1)).total_seconds())
+    # parse and init timestamps
+    tz = get_localzone()
+    dt_epoch = tz.localize(datetime(1970, 1, 1))
+    dt_begin = tz.localize(datetime.today())
     if args['begin']:
-        ts_begin = int((args['begin'] - datetime(1970, 1, 1)).total_seconds())
+        dt_begin = tz.localize(args['begin'])
+    ts_begin = int(dt_begin - dt_epoch).total_seconds())
     ts_until = 0
     if args['until']:
-        ts_until = int((args['until'] - datetime(1970, 1, 1)).total_seconds())
-    logging.info("START")
+        dt_until = tz.localize(args['until'])
+        ts_until = int(dt_until - dt_epoch).total_seconds())
 
+    # init threads
     output_queue = mp.Queue()
     ot = mp.Process(target=output,
                     args=(output_queue,))
+    rt = mp.Process(target=recv_bgpstream_rib,
+                    args=((ts_begin-7200), ts_until, args['collector'], output_queue))
+
+    logging.info("START")
     try:
         ot.start()
-        recv_bgpstream_updates(ts_begin, ts_until, collector, output_queue)
+        rt.start()
+        recv_bgpstream_updates(ts_begin, ts_until, args['collector'], output_queue)
     except KeyboardInterrupt:
         logging.exception ("ABORT")
     finally:
