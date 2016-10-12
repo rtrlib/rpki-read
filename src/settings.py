@@ -12,6 +12,7 @@ VALIDITY_DESCR = [  "At least one VRP Matches the Route Prefix",
 # connections
 DEFAULT_CACHE_SERVER = {"host": "rpki-validator.realmv6.org", "port": 8282}
 DEFAULT_BGPMON_SERVER = {"host": "localhost", "uport": 50001, "rport": 50002}
+DEFAULT_BGPSTREAM_COLLECTOR = "route-views.linx"
 DEFAULT_MONGO_DATABASE = {"uri": "mongodb://localhost:27017/rpki-read"}
 DEFAULT_WEB_SERVER = {"host": "0.0.0.0", "port": 5100}
 DEFAULT_LOG_LEVEL = "CRITICAL"
