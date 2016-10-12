@@ -140,7 +140,7 @@ def main():
     parser = argparse.ArgumentParser(description='', epilog='')
     parser.add_argument('-l', '--loglevel',
                         help='Set loglevel [DEBUG,INFO,WARNING,ERROR,CRITICAL].',
-                        type=str, default='ERROR')
+                        type=str, default=DEFAULT_LOG_LEVEL)
     parser.add_argument('-a', '--addr',
                         help='Address or name of RPKI cache server.',
                         default=DEFAULT_CACHE_SERVER['host'])

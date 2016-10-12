@@ -8,6 +8,8 @@ from math import sqrt
 from pymongo import MongoClient, DESCENDING, ASCENDING
 from settings import BULK_TIMEOUT, BULK_MAX_OPS
 
+logging.basicConfig(level=logging.CRITICAL, format='%(asctime)s : %(levelname)s : %(message)s')
+
 def output_latest(dbconnstr):
     """Generate and store latest validation results in database"""
     logging.info ("CALL output_latest, with mongodb: " +dbconnstr)

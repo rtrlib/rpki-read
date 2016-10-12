@@ -20,7 +20,9 @@ class BGPmessage:
         self.aspath.append(asn)
 
     def add_announce(self, prefix):
-        self.announce.append(prefix)
+        if prefix not in self.announce:
+            self.announce.append(prefix)
 
     def add_withdraw(self, prefix):
-        self.withdraw.append(prefix)
+        if prefix not in self.withdraw:
+            self.withdraw.append(prefix)

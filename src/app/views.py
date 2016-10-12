@@ -24,7 +24,6 @@ def update_validation_stats():
 
 @app.before_first_request
 def initialize():
-    update_validation_stats()
     apsched = BackgroundScheduler()
     update_validation_stats()
     apsched.add_job(update_validation_stats, 'interval', seconds=23)
@@ -51,18 +50,32 @@ def about():
 @app.route('/dashboard')
 @app.route('/search', methods=['GET'])
 def dashboard():
-    #stats = get_validation_stats(config.DATABASE_CONN)
-    l_stats = g_stats.copy()
+    dash_stats = g_stats.copy()
     table = [['Validity', 'Count']]
-    table.append([ 'Valid', l_stats['num_Valid'] ])
-    table.append([ 'Invalid Length', l_stats['num_InvalidLength'] ])
-    table.append([ 'Invalid AS', l_stats['num_InvalidAS'] ])
-    l_stats['table_roa'] = table
+    table.append([ 'Valid', dash_stats['num_Valid'] ])
+    table.append([ 'Invalid Length', dash_stats['num_InvalidLength'] ])
+    table.append([ 'Invalid AS', dash_stats['num_InvalidAS'] ])
+    dash_stats['table_roa'] = table
     table_all = list(table)
-    table_all.append([ 'Not Found', l_stats['num_NotFound'] ])
-    l_stats['table_all'] = table_all
-    l_stats['source'] = config.BGPMON_SOURCE
-    return render_template("dashboard.html", stats=l_stats)
+    table_all.append([ 'Not Found', dash_stats['num_NotFound'] ])
+    dash_stats['table_all'] = table_all
+    dash_stats['source'] = config.BGPMON_SOURCE
+    return render_template("dashboard.html", stats=dash_stats)
+
+## stats handler
+@app.route('/stats')
+def stats():
+    dash_stats = g_stats.copy()
+    table = [['Validity', 'Count']]
+    table.append([ 'Valid', dash_stats['num_Valid'] ])
+    table.append([ 'Invalid Length', dash_stats['num_InvalidLength'] ])
+    table.append([ 'Invalid AS', dash_stats['num_InvalidAS'] ])
+    dash_stats['table_roa'] = table
+    table_all = list(table)
+    table_all.append([ 'Not Found', dash_stats['num_NotFound'] ])
+    dash_stats['table_all'] = table_all
+    dash_stats['source'] = config.BGPMON_SOURCE
+    return render_template("stats.html", stats=l_stats)
 
 ## table handler
 @app.route('/valid')

@@ -14,10 +14,12 @@ DEFAULT_CACHE_SERVER = {"host": "rpki-validator.realmv6.org", "port": 8282}
 DEFAULT_BGPMON_SERVER = {"host": "localhost", "uport": 50001, "rport": 50002}
 DEFAULT_MONGO_DATABASE = {"uri": "mongodb://localhost:27017/rpki-read"}
 DEFAULT_WEB_SERVER = {"host": "0.0.0.0", "port": 5100}
+DEFAULT_LOG_LEVEL = "CRITICAL"
 
 BULK_MAX_OPS = 10000
 BULK_TIMEOUT = 30
-RIB_TS_INTERVAL = 600
+RIB_TS_INTERVAL = 7200
+RIB_TS_WAIT = 600
 SERVICE_INTERVAL = 600
 DOSTATS_INTERVAL = 60
 MAX_COUNTER = 10000
