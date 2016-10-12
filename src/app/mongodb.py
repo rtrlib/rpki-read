@@ -8,10 +8,30 @@ from netaddr import *
 
 logging.basicConfig(level=logging.CRITICAL, format='%(asctime)s : %(levelname)s : %(message)s')
 
-def get_detailed_stats(dbconnstr):
+def get_ipversion_stats(dbconnstr):
     client = MongoClient(dbconnstr)
     db = client.get_default_database()
-    stats = dict()
+    types = ['origins_', 'ips_']
+    ipv4_stats = dict()
+    for t in types:
+        ipv4_stats[t+'Valid'] = 0
+        ipv4_stats[t+'InvalidAS'] = 0
+        ipv4_stats[t+'InvalidLength'] = 0
+        ipv4_stats[t+'NotFound'] = 0
+    ipv4_stats['pfx_Valid'] = []
+    ipv4_stats['pfx_InvalidAS'] = []
+    ipv4_stats['pfx_InvalidLength'] = []
+    ipv4_stats['pfx_NotFound'] = []
+    ipv6_stats = dict()
+    for t in types:
+        ipv6_stats[t+'Valid'] = 0
+        ipv6_stats[t+'InvalidAS'] = 0
+        ipv6_stats[t+'InvalidLength'] = 0
+        ipv6_stats[t+'NotFound'] = 0
+    ipv6_stats['pfx_Valid'] = []
+    ipv6_stats['pfx_InvalidAS'] = []
+    ipv6_stats['pfx_InvalidLength'] = []
+    ipv6_stats['pfx_NotFound'] = []
     if "validity_latest" in db.collection_names() and db.validity_latest.count() > 0:
         try:
             pipeline = [ {
@@ -20,18 +40,57 @@ def get_detailed_stats(dbconnstr):
                     "origins": {
                         "$push" : {
                             "asn": "$value.validated_route.route.origin_asn",
-                            "valitidy": "$value.validated_route.validity.state"
+                            "validity": "$value.validated_route.validity.state"
                         }
                     }
-                }
+                },
             } ]
-            results = db.validity_latest.aggregate(pipeline, allowDiskUse=True)
+            results = list(db.validity_latest.aggregate(pipeline, allowDiskUse=True))
+            # parse results
+            for r in results:
+                if r['_id'] == None:
+                    logging.debug("emtpy record, skipping")
+                    continue
+                logging.debug(str(r))
+                ip = IPNetwork(r['_id'])
+                b_val = {"Valid": False, "InvalidLength": False, "InvalidAS": False, "NotFound": False}
+                if ip.version == 4:
+                    for o in r['origins']:
+                        ipv4_stats["origins_"+o['validity']] += 1
+                        b_val[o['validity']] = True
+                    if b_val['Valid'] == True:
+                        ipv4_stats["ips_Valid"] += ip.size
+                        ipv4_stats["pfx_Valid"].append(ip.prefixlen)
+                    elif b_val['InvalidLength'] == True:
+                        ipv4_stats["ips_InvalidLength"] += ip.size
+                        ipv4_stats["pfx_InvalidLength"].append(ip.prefixlen)
+                    elif b_val['InvalidAS'] == True:
+                        ipv4_stats["ips_InvalidAS"] += ip.size
+                        ipv4_stats["pfx_InvalidAS"].append(ip.prefixlen)
+                    elif b_val['NotFound'] == True:
+                        ipv4_stats["ips_NotFound"] += ip.size
+                        ipv4_stats["pfx_NotFound"].append(ip.prefixlen)
+                elif ip.version == 6:
+                    for o in r['origins']:
+                        ipv6_stats["origins_"+o['validity']] += 1
+                        b_val[o['validity']] = True
+                    if b_val['Valid'] == True:
+                        ipv6_stats["ips_Valid"] += ip.size
+                        ipv6_stats["pfx_Valid"].append(ip.prefixlen)
+                    elif b_val['InvalidLength'] == True:
+                        ipv6_stats["ips_InvalidLength"] += ip.size
+                        ipv6_stats["pfx_InvalidLength"].append(ip.prefixlen)
+                    elif b_val['InvalidAS'] == True:
+                        ipv6_stats["ips_InvalidAS"] += ip.size
+                        ipv6_stats["pfx_InvalidAS"].append(ip.prefixlen)
+                    elif b_val['NotFound'] == True:
+                        ipv6_stats["ips_NotFound"] += ip.size
+                        ipv6_stats["pfx_NotFound"].append(ip.prefixlen)
         except Exception, e:
             logging.exception ("QUERY failed with: " + e.message)
-        else:
-            for r in results:
-                print str(r)
-    return stats
+        # end try
+    # end if
+    return ipv4_stats, ipv6_stats
 
 def get_validation_stats(dbconnstr):
     client = MongoClient(dbconnstr)
@@ -48,7 +107,7 @@ def get_validation_stats(dbconnstr):
         try:
             pipeline = [
                 { "$match": { 'value.type': 'announcement'} },
-                { "$group": { "_id": "$value.validated_route.validity.state", "count": { "$sum": 1} } }
+                { "$group": { "_id": "$value.validated_route.validity.state", "count": { "$sum": 1 } } }
             ]
             results = list(db.validity_latest.aggregate(pipeline, allowDiskUse=True ))
             for i in range(0,len(results)):
@@ -59,7 +118,8 @@ def get_validation_stats(dbconnstr):
             stats['latest_ts'] = datetime.fromtimestamp(int(ts_tmp)).strftime('%Y-%m-%d %H:%M:%S')
         except Exception, e:
             logging.exception ("QUERY failed with: " + e.message)
-
+        # end try
+    # end if
     return stats
 
 def get_validation_list(dbconnstr, state):
@@ -69,9 +129,6 @@ def get_validation_list(dbconnstr, state):
     if "validity_latest" in db.collection_names() and db.validity_latest.count() > 0:
         try:
             rset = db.validity_latest.find({'value.validated_route.validity.state' : state},{'_id' : 0, 'value.type' : 0, 'value.timestamp' : 0})
-        except Exception, e:
-            logging.exception ("QUERY failed with: " + e.message)
-        else:
             for r in rset:
                 data = dict()
                 data['prefix'] = r['value']['validated_route']['route']['prefix']
@@ -79,7 +136,8 @@ def get_validation_list(dbconnstr, state):
                 data['state'] = r['value']['validated_route']['validity']['state']
                 data['roas'] = r['value']['validated_route']['validity']['VRPs']
                 rlist.append(data)
-
+        except Exception, e:
+            logging.exception ("QUERY failed with: " + e.message)
     return rlist
 
 def get_validation_prefix(dbconnstr, search_string):
@@ -95,9 +153,6 @@ def get_validation_prefix(dbconnstr, search_string):
         if "validity_latest" in db.collection_names() and db.validity_latest.count() > 0:
             try:
                 prefixes = list(db.validity_latest.find({},{'_id': 1}))
-            except Exception, e:
-                logging.exception ("SEARCH failed with: " + e.message)
-            else:
                 for p in prefixes:
                     ipp = IPNetwork(p['_id'])
                     if ipa in ipp:
@@ -105,6 +160,8 @@ def get_validation_prefix(dbconnstr, search_string):
                             prefix = ipp
                         elif ipp.prefixlen > prefix.prefixlen:
                             prefix = ipp
+            except Exception, e:
+                logging.exception ("SEARCH failed with: " + e.message)
         if prefix != None:
             try:
                 r = list(db.validity_latest.find({'_id': str(prefix)}))[0]
@@ -132,9 +189,6 @@ def get_validation_history(dbconnstr, search_prefix):
     if "archive" in db.collection_names() and db.archive.count() > 0:
         try:
             rset = db.archive.find({'prefix': search_prefix}, {'_id': 0}, sort=[('timestamp', DESCENDING)])
-        except Exception, e:
-            logging.exception ("SEARCH failed with: " + e.message)
-        else:
             for r in rset:
                 data = dict()
                 data['prefix'] = r['prefix']
@@ -147,4 +201,6 @@ def get_validation_history(dbconnstr, search_prefix):
                 else:
                     data['state'] = 'withdraw'
                 rlist.append(data)
+        except Exception, e:
+            logging.exception ("SEARCH failed with: " + e.message)
     return rlist

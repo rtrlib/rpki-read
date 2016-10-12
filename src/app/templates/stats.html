@@ -6,32 +6,14 @@
       google.setOnLoadCallback(drawChart);
       function drawChart() {
 
-        var pdata_all = google.visualization.arrayToDataTable({{ stats.table_all|tojson }});
-        var pview_roa = new google.visualization.DataView(pdata_all);
-        pview_roa.hideRows([3]); // skip row with NotFound
+        var data_ipv4_origins = google.visualization.arrayToDataTable({{ stats.ipv4_origins|tojson }});
+        var data_ipv6_origins = google.visualization.arrayToDataTable({{ stats.ipv6_origins|tojson }});
+        var data_ipv4_coverage = google.visualization.arrayToDataTable({{ stats.ipv4_coverage|tojson }});
+        var data_ipv6_coverage = google.visualization.arrayToDataTable({{ stats.ipv6_coverage|tojson }});
 
-        var ldata_all = new google.visualization.DataTable();
-        ldata_all.addColumn('datetime', 'Timestamp');
-        ldata_all.addColumn('number', 'Valid');
-        ldata_all.addColumn('number', 'Invalid Length');
-        ldata_all.addColumn('number', 'Invalid AS');
-        ldata_all.addColumn('number', 'Not Found');
-        ldata_all_json = {{ stats.stats_all|tojson }}
-        $.each(ldata_all_json, function(i,row) {
-            ldata_all.addRow([
-                (new Date(row.ts*1000)),
-                parseInt(row.num_Valid),
-                parseInt(row.num_InvalidLength),
-                parseInt(row.num_InvalidAS),
-                parseInt(row.num_NotFound)
-            ]);
-        });
-
-        var lview_roa = new google.visualization.DataView(ldata_all);
-        lview_roa.setColumns([0,1,2,3]); // skip column with NotFound
-
-        var popts_all = {
+        var pc_opts = {
             legend:{position: 'left'},
+            enableInteractivity: false,
             slices: {
                 0: { color: '#33a02c' },
                 1: { color: '#ff7f00' },
@@ -41,48 +23,16 @@
             is3D: true,
             chartArea:{left:'5%',top:'5%',width:'90%',height:'95%'}
         };
-        var popts_roa = {
-            legend:{position: 'left'},
-            slices: {
-                0: { color: '#33a02c' },
-                1: { color: '#ff7f00' },
-                2: { color: '#e31a1c' }
-            },
-            is3D: true,
-            chartArea:{left:'5%',top:'5%',width:'90%',height:'95%'}
-        };
-        var lopts_all = {
-            hAxis:{format: 'yy/MM/dd\nHH:mm'},
-            series: {
-                0: { color: '#33a02c' },
-                1: { color: '#ff7f00' },
-                2: { color: '#e31a1c' },
-                3: { color: '#888888' }
-            },
-            legend:{position: 'top'},
-            chartArea:{left:'15%',top:'10%',width:'80%',height:'70%'}
-        };
-        var lopts_roa = {
-            hAxis:{format: 'yy/MM/dd\nHH:mm'},
-            series: {
-                0: { color: '#33a02c' },
-                1: { color: '#ff7f00' },
-                2: { color: '#e31a1c' }
-            },
-            legend:{position: 'top'},
-            chartArea:{left:'15%',top:'10%',width:'80%',height:'70%'}
-        };
 
-        var pchart_all = new google.visualization.PieChart(document.getElementById('piechart_all'));
-        var pchart_roa = new google.visualization.PieChart(document.getElementById('piechart_roa'));
-        var lchart_all = new google.visualization.LineChart(document.getElementById('linechart_all'));
-        var lchart_roa = new google.visualization.LineChart(document.getElementById('linechart_roa'));
+        var pc_ipv4_origins = new google.visualization.PieChart(document.getElementById('pc_ipv4_origins'));
+        var pc_ipv6_origins = new google.visualization.PieChart(document.getElementById('pc_ipv6_origins'));
+        var pc_ipv4_coverage = new google.visualization.PieChart(document.getElementById('pc_ipv4_coverage'));
+        var pc_ipv6_coverage = new google.visualization.PieChart(document.getElementById('pc_ipv6_coverage'));
 
-        pchart_all.draw(pdata_all, popts_all);
-        pchart_roa.draw(pview_roa, popts_roa);
-        lchart_all.draw(ldata_all, lopts_all);
-        lchart_roa.draw(lview_roa, lopts_roa);
-
+        pc_ipv4_origins.draw(data_ipv4_origins, pc_opts);
+        pc_ipv6_origins.draw(data_ipv6_origins, pc_opts);
+        pc_ipv4_coverage.draw(data_ipv4_coverage_origins, pc_opts);
+        pc_ipv6_coverage.draw(data_ipv6_coverage_origins, pc_opts);
       }
     </script>
 {% endblock %}
@@ -91,57 +41,45 @@
             <div class="col-xs-12">
                 <div class="panel panel-default">
                     <div class="panel-heading">
-                        <h1>Dashboard</h1>
-                        <p>Overview on latest RPKI validation results of IP prefix to BGP origin AS association.</p>
-                        <hr>
-                        <h4> Timestamp: <span class="label label-primary">{{ stats.latest_ts }}</span> <span class="pull-right">BGP Source: <span class="label label-primary">{{ stats.source }}</span></span></h4>
+                        <h1>Statistics</h1>
+                        <p>Detailed view on latest RPKI validation results of IP prefix to BGP origin AS association.</p>
                     </div>
-                    <ul class="list-group">
-                    <li class="clearfix lead list-group-item">
-                        <span class="label label-default"># {{ stats.num_NotFound }}</span>
-                        <span class="pull-right">Not Found</span>
-                    </li>
-                    <li class="clearfix lead list-group-item">
-                        <span class="label label-success"># {{ stats.num_Valid }}</span>
-                        <span class="pull-right">Valid</span>
-                    </li>
-                    <li class="clearfix lead list-group-item">
-                        <span class="label label-warning"># {{ stats.num_InvalidLength }}</span>
-                        <span class="pull-right">Invalid Length</span>
-                    </li>
-                    <li class="clearfix lead list-group-item">
-                        <span class="label label-danger"># {{ stats.num_InvalidAS }}</span>
-                        <span class="pull-right">Invalid AS</span>
-                    </li>
-                    <li class="clearfix lead list-group-item">
-                        <span class="label label-primary"># {{ stats.num_NotFound + stats.num_Valid + stats.num_InvalidAS + stats.num_InvalidLength }}</span>
-                        <span class="pull-right">Total</span>
-                    </li>
-                    </ul>
                 </div>
             </div>
         </div>
         <div class="row">
             <div class="col-md-6 col-xs-12"><div class="panel panel-default">
                 <div class="panel-heading">
-                    <h3>All known origins</h3>
+                    <h3>IPv4 origins</h3>
                 </div>
                 <div class="panel-body">
-                    <h4>Relative validation results <span class="pull-right"><span class="label label-primary"># {{ stats.num_NotFound + stats.num_Valid + stats.num_InvalidAS + stats.num_InvalidLength }}</span></span> </h4>
-                    <div id="piechart_all"></div>
-                    <h4>Last 24 hours</h4>
-                    <div id="linechart_all"></div>
+                    <div id="pc_ipv4_origins"></div>
                 </div>
             </div></div>
             <div class="col-md-6 col-xs-12"><div class="panel panel-default">
                 <div class="panel-heading">
-                    <h3>Origins with ROA</h3>
+                    <h3>IPv6 origins</h3>
                 </div>
                 <div class="panel-body">
-                    <h4>Relative validation results <span class="pull-right"><span class="label label-primary"># {{ stats.num_Valid + stats.num_InvalidAS + stats.num_InvalidLength }}</span></span> </h4>
-                    <div id="piechart_roa"></div>
-                    <h4>Last 24 hours</h4>
-                    <div id="linechart_roa"></div>
+                    <div id="pc_ipv6_origins"></div>
+                </div>
+            </div></div>
+        </div>
+        <div class="row">
+            <div class="col-md-6 col-xs-12"><div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3>IPv4 Coverage</h3>
+                </div>
+                <div class="panel-body">
+                    <div id="pc_ipv4_coverage"></div>
+                </div>
+            </div></div>
+            <div class="col-md-6 col-xs-12"><div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3>IPv6 Coverage</h3>
+                </div>
+                <div class="panel-body">
+                    <div id="pc_ipv6_coverage"></div>
                 </div>
             </div></div>
         </div>

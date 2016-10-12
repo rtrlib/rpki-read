@@ -4,6 +4,7 @@ import logging
 import markdown
 import sys
 import socket
+import threading
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask import render_template, Markup, request
@@ -11,22 +12,30 @@ from app import app
 
 import config
 if config.DATABASE_TYPE == 'mongodb':
-    from mongodb import get_validation_stats, get_validation_list, get_validation_prefix, get_validation_history
+    from mongodb import *
 else:
     logging.critical("unknown database type!")
     sys.exit(1)
 
-g_stats = dict()
+logging.basicConfig(level=logging.CRITICAL, format='%(asctime)s : %(levelname)s : %(message)s')
+
+g_dash_stats = dict()
+g_ipv4_stats = dict()
+g_ipv6_stats = dict()
+
+stats_lock = threading.Lock()
 
 def update_validation_stats():
-    global g_stats
-    g_stats = get_validation_stats(config.DATABASE_CONN)
+    global g_dash_stats, g_ipv4_stats, g_ipv6_stats
+    with stats_lock:
+        g_dash_stats = get_validation_stats(config.DATABASE_CONN)
+        g_ipv4_stats, g_ipv6_stats = get_ipversion_stats(config.DATABASE_CONN)
 
 @app.before_first_request
 def initialize():
     apsched = BackgroundScheduler()
     update_validation_stats()
-    apsched.add_job(update_validation_stats, 'interval', seconds=23)
+    apsched.add_job(update_validation_stats, 'interval', seconds=config.UPDATE_INTERVAL_STATS)
     apsched.start()
 
 def _get_table_json(state):
@@ -50,7 +59,9 @@ def about():
 @app.route('/dashboard')
 @app.route('/search', methods=['GET'])
 def dashboard():
-    dash_stats = g_stats.copy()
+    stats_lock.acquire()
+    dash_stats = g_dash_stats.copy()
+    stats_lock.release()
     table = [['Validity', 'Count']]
     table.append([ 'Valid', dash_stats['num_Valid'] ])
     table.append([ 'Invalid Length', dash_stats['num_InvalidLength'] ])
@@ -65,17 +76,46 @@ def dashboard():
 ## stats handler
 @app.route('/stats')
 def stats():
-    dash_stats = g_stats.copy()
-    table = [['Validity', 'Count']]
-    table.append([ 'Valid', dash_stats['num_Valid'] ])
-    table.append([ 'Invalid Length', dash_stats['num_InvalidLength'] ])
-    table.append([ 'Invalid AS', dash_stats['num_InvalidAS'] ])
-    dash_stats['table_roa'] = table
-    table_all = list(table)
-    table_all.append([ 'Not Found', dash_stats['num_NotFound'] ])
-    dash_stats['table_all'] = table_all
-    dash_stats['source'] = config.BGPMON_SOURCE
-    return render_template("stats.html", stats=dash_stats)
+    stats_lock.acquire()
+    ipv4_stats = g_ipv4_stats.copy()
+    ipv6_stats = g_ipv6_stats.copy()
+    dash_stats = g_dash_stats.copy()
+    stats_lock.release()
+    stats=dict()
+    try:
+        # ipv4 origin stats
+        table = [['Validity', 'Count']]
+        table.append([ 'Valid', ipv4_stats['origins_Valid'] ])
+        table.append([ 'Invalid Length', ipv4_stats['origins_InvalidLength'] ])
+        table.append([ 'Invalid AS', ipv4_stats['origins_InvalidAS'] ])
+        table_all.append([ 'Not Found', ipv4_stats['origins_NotFound'] ])
+        stats['ipv4_origins'] = table
+        # ipv4 space coverage stats
+        table = [['Validity', 'Count']]
+        table.append([ 'Valid', ipv4_stats['ips_Valid'] ])
+        table.append([ 'Invalid Length', ipv4_stats['ips_InvalidLength'] ])
+        table.append([ 'Invalid AS', ipv4_stats['ips_InvalidAS'] ])
+        table_all.append([ 'Not Found', ipv4_stats['ips_NotFound'] ])
+        stats['ipv4_coverage'] = table
+        # ipv6 origin stats
+        table = [['Validity', 'Count']]
+        table.append([ 'Valid', ipv6_stats['origins_Valid'] ])
+        table.append([ 'Invalid Length', ipv6_stats['origins_InvalidLength'] ])
+        table.append([ 'Invalid AS', ipv6_stats['origins_InvalidAS'] ])
+        table_all.append([ 'Not Found', ipv6_stats['origins_NotFound'] ])
+        stats['ipv6_origins'] = table
+        # ipv6 space coverage stats
+        table = [['Validity', 'Count']]
+        table.append([ 'Valid', ipv6_stats['ips_Valid'] ])
+        table.append([ 'Invalid Length', ipv6_stats['ips_InvalidLength'] ])
+        table.append([ 'Invalid AS', ipv6_stats['ips_InvalidAS'] ])
+        table_all.append([ 'Not Found', ipv6_stats['ips_NotFound'] ])
+        stats['ipv6_coverage'] = table
+        stats['latest_ts'] = dash_stats['latest_ts']
+    except Exception, e:
+        logging.exception ("stats with: " + e.message)
+    else:
+        return render_template("stats.html", stats=stats)
 
 ## table handler
 @app.route('/valid')
