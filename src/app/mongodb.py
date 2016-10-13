@@ -90,6 +90,8 @@ def get_ipversion_stats(dbconnstr):
         except Exception, e:
             logging.exception ("QUERY failed with: " + e.message)
             print "get_ipversion_stats: error"
+            ipv4_stats = None
+            ipv6_stats = None
         # end try
     # end if
     return ipv4_stats, ipv6_stats
@@ -120,6 +122,7 @@ def get_validation_stats(dbconnstr):
             stats['latest_ts'] = datetime.fromtimestamp(int(ts_tmp)).strftime('%Y-%m-%d %H:%M:%S')
         except Exception, e:
             logging.exception ("QUERY failed with: " + e.message)
+            stats = None
         # end try
     # end if
     return stats

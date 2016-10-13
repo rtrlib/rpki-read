@@ -27,9 +27,12 @@ def update_validation_stats():
     dash_stats = get_validation_stats(config.DATABASE_CONN)
     ipv4_stats, ipv6_stats = get_ipversion_stats(config.DATABASE_CONN)
     global g_dash_stats, g_ipv4_stats, g_ipv6_stats
-    g_dash_stats = dash_stats
-    g_ipv4_stats = ipv4_stats
-    g_ipv6_stats = ipv6_stats
+    if dash_stats != None:
+        g_dash_stats = dash_stats
+    if ipv4_stats != None:
+        g_ipv4_stats = ipv4_stats
+    if ipv6_stats != None:
+        g_ipv6_stats = ipv6_stats
 
 @app.before_first_request
 def initialize():
