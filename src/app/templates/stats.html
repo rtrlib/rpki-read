@@ -5,7 +5,9 @@
       google.load("visualization", "1", {packages:["corechart"], 'language': 'en'});
       google.setOnLoadCallback(drawChart);
       function drawChart() {
-
+        var data_all_origins = google.visualization.arrayToDataTable({{ stats.table_all|tojson }});
+        var view_roa_origins = new google.visualization.DataView(data_all_origins);
+        view_roa_origins.hideRows([3]); // skip row with NotFound
         var data_ipv4_origins = google.visualization.arrayToDataTable({{ stats.ipv4_origins|tojson }});
         var data_ipv6_origins = google.visualization.arrayToDataTable({{ stats.ipv6_origins|tojson }});
         var data_ipv4_coverage = google.visualization.arrayToDataTable({{ stats.ipv4_coverage|tojson }});
@@ -23,16 +25,31 @@
             is3D: true,
             chartArea:{left:'5%',top:'5%',width:'90%',height:'95%'}
         };
+        var pc_opts_roa = {
+            legend:{position: 'left'},
+            enableInteractivity: false,
+            slices: {
+                0: { color: '#33a02c' },
+                1: { color: '#ff7f00' },
+                2: { color: '#e31a1c' }
+            },
+            is3D: true,
+            chartArea:{left:'5%',top:'5%',width:'90%',height:'95%'}
+        };
 
+        var pc_all_origins = new google.visualization.PieChart(document.getElementById('pc_all_origins'));
+        var pc_roa_origins = new google.visualization.PieChart(document.getElementById('pc_roa_origins'));
         var pc_ipv4_origins = new google.visualization.PieChart(document.getElementById('pc_ipv4_origins'));
         var pc_ipv6_origins = new google.visualization.PieChart(document.getElementById('pc_ipv6_origins'));
         var pc_ipv4_coverage = new google.visualization.PieChart(document.getElementById('pc_ipv4_coverage'));
         var pc_ipv6_coverage = new google.visualization.PieChart(document.getElementById('pc_ipv6_coverage'));
 
+        pc_all_origins.draw(data_all_origins, pc_opts);
+        pc_roa_origins.draw(view_roa_origins, pc_opts_roa);
         pc_ipv4_origins.draw(data_ipv4_origins, pc_opts);
         pc_ipv6_origins.draw(data_ipv6_origins, pc_opts);
-        pc_ipv4_coverage.draw(data_ipv4_coverage_origins, pc_opts);
-        pc_ipv6_coverage.draw(data_ipv6_coverage_origins, pc_opts);
+        pc_ipv4_coverage.draw(data_ipv4_coverage, pc_opts);
+        pc_ipv6_coverage.draw(data_ipv6_coverage, pc_opts);
       }
     </script>
 {% endblock %}
@@ -43,9 +60,29 @@
                     <div class="panel-heading">
                         <h1>Statistics</h1>
                         <p>Detailed view on latest RPKI validation results of IP prefix to BGP origin AS association.</p>
+                        <hr>
+                        <h4> Timestamp: <span class="label label-primary">{{ stats.latest_ts }}</span></h4>
                     </div>
                 </div>
             </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6 col-xs-12"><div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3>All known origins</h3>
+                </div>
+                <div class="panel-body">
+                    <div id="pc_all_origins"></div>
+                </div>
+            </div></div>
+            <div class="col-md-6 col-xs-12"><div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3>Origins with ROA</h3>
+                </div>
+                <div class="panel-body">
+                    <div id="pc_roa_origins"></div>
+                </div>
+            </div></div>
         </div>
         <div class="row">
             <div class="col-md-6 col-xs-12"><div class="panel panel-default">
@@ -58,20 +95,20 @@
             </div></div>
             <div class="col-md-6 col-xs-12"><div class="panel panel-default">
                 <div class="panel-heading">
-                    <h3>IPv6 origins</h3>
+                    <h3>IPv4 Coverage</h3>
                 </div>
                 <div class="panel-body">
-                    <div id="pc_ipv6_origins"></div>
+                    <div id="pc_ipv4_coverage"></div>
                 </div>
             </div></div>
         </div>
         <div class="row">
             <div class="col-md-6 col-xs-12"><div class="panel panel-default">
                 <div class="panel-heading">
-                    <h3>IPv4 Coverage</h3>
+                    <h3>IPv6 origins</h3>
                 </div>
                 <div class="panel-body">
-                    <div id="pc_ipv4_coverage"></div>
+                    <div id="pc_ipv6_origins"></div>
                 </div>
             </div></div>
             <div class="col-md-6 col-xs-12"><div class="panel panel-default">

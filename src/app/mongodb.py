@@ -9,6 +9,7 @@ from netaddr import *
 logging.basicConfig(level=logging.CRITICAL, format='%(asctime)s : %(levelname)s : %(message)s')
 
 def get_ipversion_stats(dbconnstr):
+    print "get_ipversion_stats"
     client = MongoClient(dbconnstr)
     db = client.get_default_database()
     types = ['origins_', 'ips_']
@@ -88,6 +89,7 @@ def get_ipversion_stats(dbconnstr):
                         ipv6_stats["pfx_NotFound"].append(ip.prefixlen)
         except Exception, e:
             logging.exception ("QUERY failed with: " + e.message)
+            print "get_ipversion_stats: error"
         # end try
     # end if
     return ipv4_stats, ipv6_stats
