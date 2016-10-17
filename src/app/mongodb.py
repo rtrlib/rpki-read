@@ -96,6 +96,34 @@ def get_ipversion_stats(dbconnstr):
     # end if
     return ipv4_stats, ipv6_stats
 
+def get_latest_stats(dbconnstr):
+    client = MongoClient(dbconnstr)
+    db = client.get_default_database()
+    # init stats results
+    stats = dict()
+    stats['latest_ts'] = 'now'
+    stats['num_Valid'] = 0
+    stats['num_InvalidAS'] = 0
+    stats['num_InvalidLength'] = 0
+    stats['num_NotFound'] = 0
+    if "validity_latest" in db.collection_names() and db.validity_latest.count() > 0:
+        try:
+            pipeline = [
+                { "$match": { 'value.type': 'announcement'} },
+                { "$group": { "_id": "$value.validated_route.validity.state", "count": { "$sum": 1 } } }
+            ]
+            results = list(db.validity_latest.aggregate(pipeline, allowDiskUse=True ))
+            for i in range(0,len(results)):
+                stats["num_"+results[i]['_id']] = results[i]['count']
+            ts_tmp = db.validity_latest.find_one(projection={'value.timestamp': True, '_id': False}, sort=[('value.timestamp', DESCENDING)])['value']['timestamp']
+            stats['latest_ts'] = datetime.fromtimestamp(int(ts_tmp)).strftime('%Y-%m-%d %H:%M:%S')
+        except Exception, e:
+            logging.exception ("QUERY failed with: " + e.message)
+            stats = None
+        # end try
+    # end if
+    return stats
+
 def get_validation_stats(dbconnstr):
     client = MongoClient(dbconnstr)
     db = client.get_default_database()

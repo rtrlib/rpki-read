@@ -7,108 +7,139 @@
         google.setOnLoadCallback(drawDashCharts);
 
         function drawDashCharts() {
-            var data = google.visualization.arrayToDataTable([
+            var data_all = google.visualization.arrayToDataTable([
                 ['Validity', 'Count'],
-                ['Not Found', {{ stats.num_NotFound }} ],
-                ['Valid', {{ stats.num_Valid }} ],
-                ['Invalid Length', {{ stats.num_InvalidLength }} ],
-                ['Invalid AS', {{ stats.num_InvalidAS }} ]
+                ['Valid',           {{ stats.num_Valid }} ],
+                ['Invalid Length',  {{ stats.num_InvalidLength }} ],
+                ['Invalid AS',      {{ stats.num_InvalidAS }} ],
+                ['Not Found',       {{ stats.num_NotFound }} ]
             ]);
+            var data_roa = new google.visualization.DataView(data_all);
+            data_roa.hideRows([3]); // skip row with NotFound
 
-            var options = {
-                legend:{position: 'top'},
+            var opts_all = {
+                legend: 'none',
                 enableInteractivity: false,
                 slices: {
-                    0: { color: '#33a02c' },
-                    1: { color: '#ff7f00', offset: 0.25 },
-                    2: { color: '#e31a1c' },
-                    3: { color: '#888888' }
+                    0: { color: '#5cb85c' },
+                    1: { color: '#f0ad4e' },
+                    2: { color: '#d9534f' },
+                    3: { color: '#777', offset: 0.15 }
                 },
                 is3D: true,
-                chartArea:{left:'5%',top:'5%',width:'90%',height:'95%'},
-                pieHole: 0.6
+                chartArea:{top: '2%', height:'95%'}
+            };
+            var opts_roa = {
+                legend: 'none',
+                enableInteractivity: false,
+                slices: {
+                    0: { color: '#5cb85c', offset: 0.15 },
+                    1: { color: '#f0ad4e' },
+                    2: { color: '#d9534f' },
+                },
+                is3D: true,
+                chartArea:{top: '2%', height:'95%'}
             };
 
-            var dchart = new google.visualization.PieChart(document.getElementById('dChart'));
-            dchart.draw(data, options);
+            var dc_all = new google.visualization.PieChart(document.getElementById('dChartAll'));
+            dc_all.draw(data_all, opts_all);
+            var dc_roa = new google.visualization.PieChart(document.getElementById('dChartROA'));
+            dc_roa.draw(data_roa, opts_roa);
         }
     </script>
+    <style>
+        .row-eq-height {
+            display: -webkit-box;
+            display: -webkit-flex;
+            display: -ms-flexbox;
+            display:         flex;
+        }
+    </style>
 {% endblock %}
 {% block content %}
         <div class="row">
             <div class="col-xs-12">
                 <div class="panel panel-default">
                     <div class="panel-heading">
-                        <h1>Dashboard</h1>
-                        <p>
+                        <h1>RPKI Realtime Dashboard</h1>
+                        <h4>
                             <span class="pull-left">Timestamp: <span class="label label-primary">{{ stats.latest_ts }}</span></span>
-                            <span class="middle">Prefix Origins: <span class="label label-primary">{{ stats.num_NotFound + stats.num_Valid + stats.num_InvalidLength + stats.num_InvalidAS}}</span></span>
                             <span class="pull-right">BGP Source: <span class="label label-primary">{{ stats.source }}</span></span>
-                        </p>
-                        <hr>
-                        <p>Overview on latest RPKI validation results of IP prefix to BGP origin AS association.</p>
+                        </h4>
+                        </br>
                     </div>
-
+                    <div class="panel-body">
+                        <p>
+                            Overview on latest RPKI validation results of IP prefix to BGP origin AS association.
+                            Here comes some more info text to explain the results shown below.
+                        </p>
+                        <div class="progress">
+                            <div class="progress-bar progress-bar-success" style="width: {{ (stats.num_Valid * 100)/(stats.num_NotFound + stats.num_Valid + stats.num_InvalidLength + stats.num_InvalidAS) }}%">
+                                <span class="sr-only">Valid</span>
+                            </div>
+                            <div class="progress-bar progress-bar-warning" style="width: {{ (stats.num_InvalidLength * 100)/(stats.num_NotFound + stats.num_Valid + stats.num_InvalidLength + stats.num_InvalidAS) }}%">
+                                <span class="sr-only">Invalid Length</span>
+                            </div>
+                            <div class="progress-bar progress-bar-danger" style="width: {{ (stats.num_InvalidAS * 100)/(stats.num_NotFound + stats.num_Valid + stats.num_InvalidLength + stats.num_InvalidAS) }}%">
+                                <span class="sr-only">Invalid AS</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="row">
-            <div class="col-md-6 col-xs-12">
-                <div class="panel panel-info">
-                    <div class="panel-heading">
-                        <h3>Absolute Validition States</h3>
-                    </div>
-                    <div class="panel-body">
-                        <ul class="list-group">
-                            <li class="clearfix lead list-group-item">
-                                <span class="label label-default"># {{ stats.num_NotFound }}</span>
-                                <span class="pull-right">Not Found</span>
-                            </li>
-                            <li class="clearfix lead list-group-item">
-                                <span class="label label-success"># {{ stats.num_Valid }}</span>
-                                <span class="pull-right">Valid</span>
-                            </li>
-                            <li class="clearfix lead list-group-item">
-                                <span class="label label-warning"># {{ stats.num_InvalidLength }}</span>
-                                <span class="pull-right">Invalid Length</span>
-                            </li>
-                            <li class="clearfix lead list-group-item">
-                                <span class="label label-danger"># {{ stats.num_InvalidAS }}</span>
-                                <span class="pull-right">Invalid AS</span>
-                            </li>
-                        </ul>
-                    </div>
-                </div> <!-- div panel -->
-            </div> <!-- div col not found -->
-            <div class="col-md-3 col-sm-6 col-xs-12">
+            <div class="col-xs-12">
                 <div class="panel panel-default">
                     <div class="panel-heading">
-                        <h3>Relative Validition States</h3>
+                        <h2>Latest RPKI Validition Results</h2>
                     </div>
                     <div class="panel-body">
-                        <div id="dChart"></div>
-                    </div>
+                        <div class="row">
+                            <div class="col-md-4 col-xs-12">
+                                <h4>Absolute Validation Result</h4>
+                            </div>
+                            <div class="col-md-4 col-xs-12">
+                                <h4>Advertised Prefix Origins</h4>
+                            </div>
+                            <div class="col-md-4 col-xs-12">
+                                <h4>RPKI verifiable Origins</h4>
+                            </div>
+                        </div> <!-- row -->
+                        <div class="row row-eq-height">
+                            <div class="col-md-4 col-xs-12">
+                                <ul class="list-group">
+                                    <li class="clearfix lead list-group-item">
+                                        <span class="label label-success"># {{ stats.num_Valid }}</span>
+                                        <span class="pull-right">Valid</span>
+                                    </li>
+                                    <li class="clearfix lead list-group-item">
+                                        <span class="label label-warning"># {{ stats.num_InvalidLength }}</span>
+                                        <span class="pull-right">Invalid Length</span>
+                                    </li>
+                                    <li class="clearfix lead list-group-item">
+                                        <span class="label label-danger"># {{ stats.num_InvalidAS }}</span>
+                                        <span class="pull-right">Invalid AS</span>
+                                    </li>
+                                    <li class="clearfix lead list-group-item">
+                                        <span class="label label-default"># {{ stats.num_NotFound }}</span>
+                                        <span class="pull-right">Not Found</span>
+                                    </li>
+                                    <li class="clearfix lead list-group-item">
+                                        <span class="label label-primary"># {{ stats.num_NotFound + stats.num_Valid + stats.num_InvalidLength + stats.num_InvalidAS}}</span>
+                                        <span class="pull-right">Total</span>
+                                    </li>
+                                </ul>
+                            </div> <!-- div panel body col left -->
+                            <div class="col-md-4 col-xs-12">
+                                <div id="dChartAll" style="height: 100%"></div>
+                            </div> <!-- div panel body col right -->
+                            <div class="col-md-4 col-xs-12">
+                                <div id="dChartROA" style="height: 100%"></div>
+                            </div> <!-- div panel body col right -->
+                        </div> <!-- div row-eq-height -->
+                    </div> <!-- div panel body -->
                 </div> <!-- div panel -->
-            </div> <!-- div col valid -->
+            </div> <!-- div col stats -->
         </div><!-- div row  -->
-        <div class="row">
-            <div class="col-md-6 col-xs-12"><div class="panel panel-default">
-                <div class="panel-heading">
-                    <h3>All known origins</h3>
-                </div>
-                <div class="panel-body">
-                    <h4>Last 24 hours <span class="pull-right"><span class="label label-primary"># {{ stats.num_NotFound + stats.num_Valid + stats.num_InvalidAS + stats.num_InvalidLength }}</span></span></h4>
-                    <div id="linechart_all"></div>
-                </div>
-            </div></div>
-            <div class="col-md-6 col-xs-12"><div class="panel panel-default">
-                <div class="panel-heading">
-                    <h3>Origins with ROA</h3>
-                </div>
-                <div class="panel-body">
-                    <h4>Last 24 hours <span class="pull-right"><span class="label label-primary"># {{ stats.num_Valid + stats.num_InvalidAS + stats.num_InvalidLength }}</span></span></h4>
-                    <div id="linechart_roa"></div>
-                </div>
-            </div></div>
-        </div>
 {% endblock %}
