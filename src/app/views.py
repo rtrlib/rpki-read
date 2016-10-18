@@ -109,12 +109,12 @@ def stats():
     stats=dict()
     try:
         # ipv4 origin stats
-        #if ('num_NotFound' in g_ipv4_stats) and (g_ipv4_stats['num_NotFound'] > 0):
-        if ('num_NotFound' in g_ipv4_stats):
+        if ('num_NotFound' in g_ipv4_stats) and (g_ipv4_stats['num_NotFound'] > 0):
+        #if ('num_NotFound' in g_ipv4_stats):
             stats['ipv4'] = '1'
             stats['ipv4_data'] = g_ipv4_stats
-        #if ('num_NotFound' in g_ipv6_stats) and (g_ipv6_stats['num_NotFound'] > 0):
-        if ('num_NotFound' in g_ipv6_stats):
+        if ('num_NotFound' in g_ipv6_stats) and (g_ipv6_stats['num_NotFound'] > 0):
+        #if ('num_NotFound' in g_ipv6_stats):
             stats['ipv6'] = '1'
             stats['ipv6_data'] = g_ipv6_stats
         stats['latest_ts'] = g_dash_stats['latest_ts']
