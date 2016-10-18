@@ -69,21 +69,33 @@
                         </br>
                     </div>
                     <div class="panel-body">
-                        <p>
-                            Overview on latest RPKI validation results of IP prefix to BGP origin AS association.
-                            Here comes some more info text to explain the results shown below.
-                        </p>
                         <div class="progress">
-                            <div class="progress-bar progress-bar-success" style="width: {{ (stats.num_Valid * 100)/(stats.num_NotFound + stats.num_Valid + stats.num_InvalidLength + stats.num_InvalidAS) }}%">
+                            <div class="progress-bar progress-bar-success" style="width: {{ stats.rel_Valid }}%">
                                 <span class="sr-only">Valid</span>
                             </div>
-                            <div class="progress-bar progress-bar-warning" style="width: {{ (stats.num_InvalidLength * 100)/(stats.num_NotFound + stats.num_Valid + stats.num_InvalidLength + stats.num_InvalidAS) }}%">
+                            <div class="progress-bar progress-bar-warning" style="width: {{ stats.rel_InvalidLength }}%">
                                 <span class="sr-only">Invalid Length</span>
                             </div>
-                            <div class="progress-bar progress-bar-danger" style="width: {{ (stats.num_InvalidAS * 100)/(stats.num_NotFound + stats.num_Valid + stats.num_InvalidLength + stats.num_InvalidAS) }}%">
+                            <div class="progress-bar progress-bar-danger" style="width: {{ stats.rel_InvalidAS }}%">
                                 <span class="sr-only">Invalid AS</span>
                             </div>
+                            <div class="text-center">{{stats.rel_Valid + stats.rel_InvalidLength + stats.rel_InvalidAS}}% Prefix Origins are RPKI verifiable</div>
                         </div>
+                        <p class="text-primary lead">
+                            This page provides a realtime overview on the latest RPKI origin
+                            AS validation results. It covers all IP prefix advertised by
+                            the given BGP source and current timestamp. The progess bar above
+                            shows the current state and coverage of the RPKI origin validation,
+                            i.e., how many prefix origins are verifiable by a matching ROA.
+                            For more and detailed statistics on RPKI validation state have look
+                            at our <a href="/stats">stats</a> page.
+                        </p>
+                        <p class="text-info">
+                            Please note that the number of prefix to origin AS relations is
+                            higher than the number of distinct IP prefixes advertised in the
+                            BGP. A certain IP prefix can be announced by multiple ASes, thus
+                            has several origins.
+                        </p>
                     </div>
                 </div>
             </div>
@@ -97,7 +109,7 @@
                     <div class="panel-body">
                         <div class="row">
                             <div class="col-md-4 col-xs-12">
-                                <h4>Absolute Validation Result</h4>
+                                <h4>by the numbers</h4>
                             </div>
                             <div class="col-md-4 col-xs-12">
                                 <h4>Advertised Prefix Origins</h4>
@@ -126,7 +138,7 @@
                                         <span class="pull-right">Not Found</span>
                                     </li>
                                     <li class="clearfix lead list-group-item">
-                                        <span class="label label-primary"># {{ stats.num_NotFound + stats.num_Valid + stats.num_InvalidLength + stats.num_InvalidAS}}</span>
+                                        <span class="label label-primary"># {{ stats.num_Total}}</span>
                                         <span class="pull-right">Total</span>
                                     </li>
                                 </ul>

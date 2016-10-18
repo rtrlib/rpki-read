@@ -30,6 +30,10 @@ def update_validation_stats():
     dash_stats = get_latest_stats(config.DATABASE_CONN)
     if dash_stats != None:
         dash_stats['source'] = config.BGPMON_SOURCE
+        dash_stats['rel_Valid'] = round( (float(dash_stats['num_Valid'])/float(dash_stats['num_Total']))*100 , 2)
+        dash_stats['rel_InvalidLength'] = round( (float(dash_stats['num_InvalidLength'])/float(dash_stats['num_Total']))*100 , 2)
+        dash_stats['rel_InvalidAS'] = round( (float(dash_stats['num_InvalidAS'])/float(dash_stats['num_Total']))*100 , 2)
+        dash_stats['rel_NotFound'] = round( (float(dash_stats['num_NotFound'])/float(dash_stats['num_Total']))*100 , 2)
         g_dash_stats = dash_stats
     if g_stats_counter > config.UPDATE_INTERVAL_FACTOR:
         g_stats_counter = 0

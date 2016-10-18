@@ -106,6 +106,7 @@ def get_latest_stats(dbconnstr):
     stats['num_InvalidAS'] = 0
     stats['num_InvalidLength'] = 0
     stats['num_NotFound'] = 0
+    stats['num_Total'] = 0
     if "validity_latest" in db.collection_names() and db.validity_latest.count() > 0:
         try:
             pipeline = [
@@ -115,6 +116,7 @@ def get_latest_stats(dbconnstr):
             results = list(db.validity_latest.aggregate(pipeline, allowDiskUse=True ))
             for i in range(0,len(results)):
                 stats["num_"+results[i]['_id']] = results[i]['count']
+                stats['num_Total'] += results[i]['count']
             ts_tmp = db.validity_latest.find_one(projection={'value.timestamp': True, '_id': False}, sort=[('value.timestamp', DESCENDING)])['value']['timestamp']
             stats['latest_ts'] = datetime.fromtimestamp(int(ts_tmp)).strftime('%Y-%m-%d %H:%M:%S')
         except Exception, e:
