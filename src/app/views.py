@@ -21,18 +21,27 @@ logging.basicConfig(level=logging.CRITICAL, format='%(asctime)s : %(levelname)s 
 g_dash_stats = dict()
 g_ipv4_stats = dict()
 g_ipv6_stats = dict()
+g_stats_counter = config.UPDATE_INTERVAL_FACTOR
 
 def update_validation_stats():
+    global g_stats_counter, g_dash_stats, g_ipv4_stats, g_ipv6_stats
+    g_stats_counter += 1
     #app.logging.debug("update_validation_stats")
-    dash_stats = get_validation_stats(config.DATABASE_CONN)
-    ipv4_stats, ipv6_stats = get_ipversion_stats(config.DATABASE_CONN)
-    global g_dash_stats, g_ipv4_stats, g_ipv6_stats
+    dash_stats = get_latest_stats(config.DATABASE_CONN)
     if dash_stats != None:
+        dash_stats['source'] = config.BGPMON_SOURCE
+        dash_stats['rel_Valid'] = round( (float(dash_stats['num_Valid'])/float(dash_stats['num_Total']))*100 , 2)
+        dash_stats['rel_InvalidLength'] = round( (float(dash_stats['num_InvalidLength'])/float(dash_stats['num_Total']))*100 , 2)
+        dash_stats['rel_InvalidAS'] = round( (float(dash_stats['num_InvalidAS'])/float(dash_stats['num_Total']))*100 , 2)
+        dash_stats['rel_NotFound'] = round( (float(dash_stats['num_NotFound'])/float(dash_stats['num_Total']))*100 , 2)
         g_dash_stats = dash_stats
-    if ipv4_stats != None:
-        g_ipv4_stats = ipv4_stats
-    if ipv6_stats != None:
-        g_ipv6_stats = ipv6_stats
+    if g_stats_counter > config.UPDATE_INTERVAL_FACTOR:
+        g_stats_counter = 0
+        ipv4_stats, ipv6_stats = get_ipversion_stats(config.DATABASE_CONN)
+        if ipv4_stats != None:
+            g_ipv4_stats = ipv4_stats
+        if ipv6_stats != None:
+            g_ipv6_stats = ipv6_stats
 
 @app.before_first_request
 def initialize():
@@ -62,17 +71,7 @@ def about():
 @app.route('/dashboard')
 @app.route('/search', methods=['GET'])
 def dashboard():
-    dash_stats = g_dash_stats.copy()
-    table = [['Validity', 'Count']]
-    table.append([ 'Valid', dash_stats['num_Valid'] ])
-    table.append([ 'Invalid Length', dash_stats['num_InvalidLength'] ])
-    table.append([ 'Invalid AS', dash_stats['num_InvalidAS'] ])
-    dash_stats['table_roa'] = table
-    table_all = list(table)
-    table_all.append([ 'Not Found', dash_stats['num_NotFound'] ])
-    dash_stats['table_all'] = table_all
-    dash_stats['source'] = config.BGPMON_SOURCE
-    return render_template("dashboard.html", stats=dash_stats)
+    return render_template("dashboard.html", stats=g_dash_stats)
 
 ## stats handler
 @app.route('/stats')

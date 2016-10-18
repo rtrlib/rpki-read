@@ -1,6 +1,6 @@
 # RPKI READ
 
-__The RPKI Real time Dashboard__
+__The RPKI Realtime Dashboard__
 
 RPKI READ aims to provide a consistent (and live) view on the RPKI validation
 state of currently announced IP prefixes. That is, it verifies association of

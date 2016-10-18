@@ -3,113 +3,155 @@
     <meta http-equiv="refresh" content="60" >
     <script type="text/javascript" src="https://www.google.com/jsapi"></script>
     <script type="text/javascript">
-      google.load("visualization", "1", {packages:["corechart"], 'language': 'en'});
-      google.setOnLoadCallback(drawChart);
-      function drawChart() {
-        var ldata_all = new google.visualization.DataTable();
-        ldata_all.addColumn('datetime', 'Timestamp');
-        ldata_all.addColumn('number', 'Valid');
-        ldata_all.addColumn('number', 'Invalid Length');
-        ldata_all.addColumn('number', 'Invalid AS');
-        ldata_all.addColumn('number', 'Not Found');
-        ldata_all_json = {{ stats.stats_all|tojson }}
-        $.each(ldata_all_json, function(i,row) {
-            ldata_all.addRow([
-                (new Date(row.ts*1000)),
-                parseInt(row.num_Valid),
-                parseInt(row.num_InvalidLength),
-                parseInt(row.num_InvalidAS),
-                parseInt(row.num_NotFound)
+        google.load("visualization", "1", {packages:["corechart"], 'language': 'en'});
+        google.setOnLoadCallback(drawDashCharts);
+
+        function drawDashCharts() {
+            var data_all = google.visualization.arrayToDataTable([
+                ['Validity', 'Count'],
+                ['Valid',           {{ stats.num_Valid }} ],
+                ['Invalid Length',  {{ stats.num_InvalidLength }} ],
+                ['Invalid AS',      {{ stats.num_InvalidAS }} ],
+                ['Not Found',       {{ stats.num_NotFound }} ]
             ]);
-        });
+            var data_roa = new google.visualization.DataView(data_all);
+            data_roa.hideRows([3]); // skip row with NotFound
 
-        var lview_roa = new google.visualization.DataView(ldata_all);
-        lview_roa.setColumns([0,1,2,3]); // skip column with NotFound
+            var opts_all = {
+                legend: 'none',
+                enableInteractivity: false,
+                slices: {
+                    0: { color: '#5cb85c' },
+                    1: { color: '#f0ad4e' },
+                    2: { color: '#d9534f' },
+                    3: { color: '#777', offset: 0.15 }
+                },
+                is3D: true,
+                chartArea:{top: '2%', height:'95%'}
+            };
+            var opts_roa = {
+                legend: 'none',
+                enableInteractivity: false,
+                slices: {
+                    0: { color: '#5cb85c', offset: 0.15 },
+                    1: { color: '#f0ad4e' },
+                    2: { color: '#d9534f' },
+                },
+                is3D: true,
+                chartArea:{top: '2%', height:'95%'}
+            };
 
-        var lopts_all = {
-            hAxis:{format: 'yy/MM/dd\nHH:mm'},
-            series: {
-                0: { color: '#33a02c' },
-                1: { color: '#ff7f00' },
-                2: { color: '#e31a1c' },
-                3: { color: '#888888' }
-            },
-            legend:{position: 'top'},
-            chartArea:{left:'15%',top:'10%',width:'80%',height:'70%'}
-        };
-        var lopts_roa = {
-            hAxis:{format: 'yy/MM/dd\nHH:mm'},
-            series: {
-                0: { color: '#33a02c' },
-                1: { color: '#ff7f00' },
-                2: { color: '#e31a1c' }
-            },
-            legend:{position: 'top'},
-            chartArea:{left:'15%',top:'10%',width:'80%',height:'70%'}
-        };
-
-        var lchart_all = new google.visualization.LineChart(document.getElementById('linechart_all'));
-        var lchart_roa = new google.visualization.LineChart(document.getElementById('linechart_roa'));
-
-        lchart_all.draw(ldata_all, lopts_all);
-        lchart_roa.draw(lview_roa, lopts_roa);
-
-      }
+            var dc_all = new google.visualization.PieChart(document.getElementById('dChartAll'));
+            dc_all.draw(data_all, opts_all);
+            var dc_roa = new google.visualization.PieChart(document.getElementById('dChartROA'));
+            dc_roa.draw(data_roa, opts_roa);
+        }
     </script>
+    <style>
+        .row-eq-height {
+            display: -webkit-box;
+            display: -webkit-flex;
+            display: -ms-flexbox;
+            display:         flex;
+        }
+    </style>
 {% endblock %}
 {% block content %}
         <div class="row">
             <div class="col-xs-12">
                 <div class="panel panel-default">
                     <div class="panel-heading">
-                        <h1>Dashboard</h1>
-                        <p>Overview on latest RPKI validation results of IP prefix to BGP origin AS association.</p>
-                        <hr>
-                        <h4> Timestamp: <span class="label label-primary">{{ stats.latest_ts }}</span> <span class="pull-right">BGP Source: <span class="label label-primary">{{ stats.source }}</span></span></h4>
+                        <h1>RPKI Realtime Dashboard</h1>
+                        <h4>
+                            <span class="pull-left">Timestamp: <span class="label label-primary">{{ stats.latest_ts }}</span></span>
+                            <span class="pull-right">BGP Source: <span class="label label-primary">{{ stats.source }}</span></span>
+                        </h4>
+                        </br>
                     </div>
-                    <ul class="list-group">
-                    <li class="clearfix lead list-group-item">
-                        <span class="label label-default"># {{ stats.num_NotFound }}</span>
-                        <span class="pull-right">Not Found</span>
-                    </li>
-                    <li class="clearfix lead list-group-item">
-                        <span class="label label-success"># {{ stats.num_Valid }}</span>
-                        <span class="pull-right">Valid</span>
-                    </li>
-                    <li class="clearfix lead list-group-item">
-                        <span class="label label-warning"># {{ stats.num_InvalidLength }}</span>
-                        <span class="pull-right">Invalid Length</span>
-                    </li>
-                    <li class="clearfix lead list-group-item">
-                        <span class="label label-danger"># {{ stats.num_InvalidAS }}</span>
-                        <span class="pull-right">Invalid AS</span>
-                    </li>
-                    <li class="clearfix lead list-group-item">
-                        <span class="label label-primary"># {{ stats.num_NotFound + stats.num_Valid + stats.num_InvalidAS + stats.num_InvalidLength }}</span>
-                        <span class="pull-right">Total</span>
-                    </li>
-                    </ul>
+                    <div class="panel-body">
+                        <div class="progress">
+                            <div class="progress-bar progress-bar-success" style="width: {{ stats.rel_Valid }}%">
+                                <span class="sr-only">Valid</span>
+                            </div>
+                            <div class="progress-bar progress-bar-warning" style="width: {{ stats.rel_InvalidLength }}%">
+                                <span class="sr-only">Invalid Length</span>
+                            </div>
+                            <div class="progress-bar progress-bar-danger" style="width: {{ stats.rel_InvalidAS }}%">
+                                <span class="sr-only">Invalid AS</span>
+                            </div>
+                            <div class="text-center">{{stats.rel_Valid + stats.rel_InvalidLength + stats.rel_InvalidAS}}% Prefix Origins are RPKI verifiable</div>
+                        </div>
+                        <p class="text-primary lead">
+                            This page provides a realtime overview on the latest RPKI origin
+                            AS validation results. It covers all IP prefix advertised by
+                            the given BGP source and current timestamp. The progess bar above
+                            shows the current state and coverage of the RPKI origin validation,
+                            i.e., how many prefix origins are verifiable by a matching ROA.
+                            For more and detailed statistics on RPKI validation state have look
+                            at our <a href="/stats">stats</a> page.
+                        </p>
+                        <p class="text-info">
+                            Please note that the number of prefix to origin AS relations is
+                            higher than the number of distinct IP prefixes advertised in the
+                            BGP. A certain IP prefix can be announced by multiple ASes, thus
+                            has several origins.
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="row">
-            <div class="col-md-6 col-xs-12"><div class="panel panel-default">
-                <div class="panel-heading">
-                    <h3>All known origins</h3>
-                </div>
-                <div class="panel-body">
-                    <h4>Last 24 hours <span class="pull-right"><span class="label label-primary"># {{ stats.num_NotFound + stats.num_Valid + stats.num_InvalidAS + stats.num_InvalidLength }}</span></span></h4>
-                    <div id="linechart_all"></div>
-                </div>
-            </div></div>
-            <div class="col-md-6 col-xs-12"><div class="panel panel-default">
-                <div class="panel-heading">
-                    <h3>Origins with ROA</h3>
-                </div>
-                <div class="panel-body">
-                    <h4>Last 24 hours <span class="pull-right"><span class="label label-primary"># {{ stats.num_Valid + stats.num_InvalidAS + stats.num_InvalidLength }}</span></span></h4>
-                    <div id="linechart_roa"></div>
-                </div>
-            </div></div>
-        </div>
+            <div class="col-xs-12">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h2>Latest RPKI Validition Results</h2>
+                    </div>
+                    <div class="panel-body">
+                        <div class="row">
+                            <div class="col-md-4 col-xs-12">
+                                <h4>by the numbers</h4>
+                            </div>
+                            <div class="col-md-4 col-xs-12">
+                                <h4>Advertised Prefix Origins</h4>
+                            </div>
+                            <div class="col-md-4 col-xs-12">
+                                <h4>RPKI verifiable Origins</h4>
+                            </div>
+                        </div> <!-- row -->
+                        <div class="row row-eq-height">
+                            <div class="col-md-4 col-xs-12">
+                                <ul class="list-group">
+                                    <li class="clearfix lead list-group-item">
+                                        <span class="label label-success"># {{ stats.num_Valid }}</span>
+                                        <span class="pull-right">Valid</span>
+                                    </li>
+                                    <li class="clearfix lead list-group-item">
+                                        <span class="label label-warning"># {{ stats.num_InvalidLength }}</span>
+                                        <span class="pull-right">Invalid Length</span>
+                                    </li>
+                                    <li class="clearfix lead list-group-item">
+                                        <span class="label label-danger"># {{ stats.num_InvalidAS }}</span>
+                                        <span class="pull-right">Invalid AS</span>
+                                    </li>
+                                    <li class="clearfix lead list-group-item">
+                                        <span class="label label-default"># {{ stats.num_NotFound }}</span>
+                                        <span class="pull-right">Not Found</span>
+                                    </li>
+                                    <li class="clearfix lead list-group-item">
+                                        <span class="label label-primary"># {{ stats.num_Total}}</span>
+                                        <span class="pull-right">Total</span>
+                                    </li>
+                                </ul>
+                            </div> <!-- div panel body col left -->
+                            <div class="col-md-4 col-xs-12">
+                                <div id="dChartAll" style="height: 100%"></div>
+                            </div> <!-- div panel body col right -->
+                            <div class="col-md-4 col-xs-12">
+                                <div id="dChartROA" style="height: 100%"></div>
+                            </div> <!-- div panel body col right -->
+                        </div> <!-- div row-eq-height -->
+                    </div> <!-- div panel body -->
+                </div> <!-- div panel -->
+            </div> <!-- div col stats -->
+        </div><!-- div row  -->
 {% endblock %}
