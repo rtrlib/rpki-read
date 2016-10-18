@@ -2,57 +2,56 @@
 {% block script %}
     <script type="text/javascript" src="https://www.google.com/jsapi"></script>
     <script type="text/javascript">
-      google.load("visualization", "1", {packages:["corechart"], 'language': 'en'});
-      google.setOnLoadCallback(drawLineCharts);
-      google.setOnLoadCallback(drawPieCharts);
+        google.load("visualization", "1", {packages:["corechart"], 'language': 'en'});
+        google.setOnLoadCallback(drawLineCharts);
 
-      function drawPieCharts() {
-        var data_all_origins = google.visualization.arrayToDataTable({{ stats.table_all|tojson }});
-        var view_roa_origins = new google.visualization.DataView(data_all_origins);
-        view_roa_origins.hideRows([3]); // skip row with NotFound
-        var data_ipv4_origins = google.visualization.arrayToDataTable({{ stats.ipv4_origins|tojson }});
-        var data_ipv6_origins = google.visualization.arrayToDataTable({{ stats.ipv6_origins|tojson }});
-        var data_ipv4_coverage = google.visualization.arrayToDataTable({{ stats.ipv4_coverage|tojson }});
-        var data_ipv6_coverage = google.visualization.arrayToDataTable({{ stats.ipv6_coverage|tojson }});
+        function drawLineCharts() {
+            var ldata_all = new google.visualization.DataTable();
+            ldata_all.addColumn('datetime', 'Timestamp');
+            ldata_all.addColumn('number', 'Valid');
+            ldata_all.addColumn('number', 'Invalid Length');
+            ldata_all.addColumn('number', 'Invalid AS');
+            ldata_all.addColumn('number', 'Not Found');
+            ldata_all_json = {{ stats.last24h|tojson }}
+            $.each(ldata_all_json, function(i,row) {
+                ldata_all.addRow([
+                    (new Date(row.ts*1000)),
+                    parseInt(row.num_Valid),
+                    parseInt(row.num_InvalidLength),
+                    parseInt(row.num_InvalidAS),
+                    parseInt(row.num_NotFound)
+            });
 
-        var pc_opts = {
-            legend:{position: 'left'},
-            enableInteractivity: false,
-            slices: {
-                0: { color: '#33a02c' },
-                1: { color: '#ff7f00' },
-                2: { color: '#e31a1c' },
-                3: { color: '#888888' }
-            },
-            is3D: true,
-            chartArea:{left:'5%',top:'5%',width:'90%',height:'95%'}
-        };
-        var pc_opts_roa = {
-            legend:{position: 'left'},
-            enableInteractivity: false,
-            slices: {
-                0: { color: '#33a02c' },
-                1: { color: '#ff7f00' },
-                2: { color: '#e31a1c' }
-            },
-            is3D: true,
-            chartArea:{left:'5%',top:'5%',width:'90%',height:'95%'}
-        };
+            var ldata_roa = new google.visualization.DataView(ldata_all);
+            ldata_roa.setColumns([0,1,2,3]); // skip column with NotFound
 
-        var pc_all_origins = new google.visualization.PieChart(document.getElementById('pc_all_origins'));
-        var pc_roa_origins = new google.visualization.PieChart(document.getElementById('pc_roa_origins'));
-        var pc_ipv4_origins = new google.visualization.PieChart(document.getElementById('pc_ipv4_origins'));
-        var pc_ipv6_origins = new google.visualization.PieChart(document.getElementById('pc_ipv6_origins'));
-        var pc_ipv4_coverage = new google.visualization.PieChart(document.getElementById('pc_ipv4_coverage'));
-        var pc_ipv6_coverage = new google.visualization.PieChart(document.getElementById('pc_ipv6_coverage'));
+            var lopts_all = {
+                hAxis:{format: 'yy/MM/dd\nHH:mm'},
+                series: {
+                    0: { color: '#33a02c' },
+                    1: { color: '#ff7f00' },
+                    2: { color: '#e31a1c' },
+                    3: { color: '#888888' }
+                },
+                legend:{position: 'top'},
+                chartArea:{left:'5%',top:'10%',width:'90%',height:'90%'}
+            };
+            var lopts_roa = {
+                hAxis:{format: 'yy/MM/dd\nHH:mm'},
+                series: {
+                    0: { color: '#33a02c' },
+                    1: { color: '#ff7f00' },
+                    2: { color: '#e31a1c' }
+                },
+                legend:{position: 'top'},
+                chartArea:{left:'5%',top:'10%',width:'90%',height:'90%'}
+            };
 
-        pc_all_origins.draw(data_all_origins, pc_opts);
-        pc_roa_origins.draw(view_roa_origins, pc_opts_roa);
-        pc_ipv4_origins.draw(data_ipv4_origins, pc_opts);
-        pc_ipv6_origins.draw(data_ipv6_origins, pc_opts);
-        pc_ipv4_coverage.draw(data_ipv4_coverage, pc_opts);
-        pc_ipv6_coverage.draw(data_ipv6_coverage, pc_opts);
-      }
+            var lchart_all = new google.visualization.LineChart(document.getElementById('lChartAll24h'));
+            var lchart_roa = new google.visualization.LineChart(document.getElementById('lChartROA24h'));
+            lchart_all.draw(ldata_all, lopts_all);
+            lchart_roa.draw(ldata_roa, lopts_roa);
+        }
     </script>
 {% endblock %}
 {% block content %}
@@ -91,69 +90,15 @@
                         <div class="row row-eq-height">
                             <div class="col-md-6 col-xs-12">
                                 <h4>Advertised Prefix Origins</h4>
-                                <div id="lChartAll" style="height: 100%"></div>
+                                <div id="lChartAll24h" style="height: 100%"></div>
                             </div> <!-- div panel body col right -->
                             <div class="col-md-6 col-xs-12">
                                 <h4>RPKI verifiable Origins</h4>
-                                <div id="lChartROA" style="height: 100%"></div>
+                                <div id="lChartROA24h" style="height: 100%"></div>
                             </div> <!-- div panel body col right -->
                         </div> <!-- div row-eq-height -->
                     </div> <!-- div panel body -->
                 </div> <!-- div panel -->
             </div> <!-- div col stats -->
         </div><!-- div row  -->
-        <div class="row">
-            <div class="col-md-6 col-xs-12"><div class="panel panel-default">
-                <div class="panel-heading">
-                    <h3>All known origins</h3>
-                </div>
-                <div class="panel-body">
-                    <div id="pc_all_origins"></div>
-                </div>
-            </div></div>
-            <div class="col-md-6 col-xs-12"><div class="panel panel-default">
-                <div class="panel-heading">
-                    <h3>Origins with ROA</h3>
-                </div>
-                <div class="panel-body">
-                    <div id="pc_roa_origins"></div>
-                </div>
-            </div></div>
-        </div>
-        <div class="row">
-            <div class="col-md-6 col-xs-12"><div class="panel panel-default">
-                <div class="panel-heading">
-                    <h3>IPv4 origins</h3>
-                </div>
-                <div class="panel-body">
-                    <div id="pc_ipv4_origins"></div>
-                </div>
-            </div></div>
-            <div class="col-md-6 col-xs-12"><div class="panel panel-default">
-                <div class="panel-heading">
-                    <h3>IPv4 Coverage</h3>
-                </div>
-                <div class="panel-body">
-                    <div id="pc_ipv4_coverage"></div>
-                </div>
-            </div></div>
-        </div>
-        <div class="row">
-            <div class="col-md-6 col-xs-12"><div class="panel panel-default">
-                <div class="panel-heading">
-                    <h3>IPv6 origins</h3>
-                </div>
-                <div class="panel-body">
-                    <div id="pc_ipv6_origins"></div>
-                </div>
-            </div></div>
-            <div class="col-md-6 col-xs-12"><div class="panel panel-default">
-                <div class="panel-heading">
-                    <h3>IPv6 Coverage</h3>
-                </div>
-                <div class="panel-body">
-                    <div id="pc_ipv6_coverage"></div>
-                </div>
-            </div></div>
-        </div>
 {% endblock %}

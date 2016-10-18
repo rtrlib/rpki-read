@@ -82,43 +82,45 @@ def dashboard():
 def stats():
     stats=dict()
     try:
-        # ipv4 origin stats
-        table = [['Validity', 'Count']]
-        table.append([ 'Valid', g_ipv4_stats['origins_Valid'] ])
-        table.append([ 'Invalid Length', g_ipv4_stats['origins_InvalidLength'] ])
-        table.append([ 'Invalid AS', g_ipv4_stats['origins_InvalidAS'] ])
-        table.append([ 'Not Found', g_ipv4_stats['origins_NotFound'] ])
-        stats['ipv4_origins'] = table
-        # ipv4 space coverage stats
-        table = [['Validity', 'Count']]
-        table.append([ 'Valid', g_ipv4_stats['ips_Valid'] ])
-        table.append([ 'Invalid Length', g_ipv4_stats['ips_InvalidLength'] ])
-        table.append([ 'Invalid AS', g_ipv4_stats['ips_InvalidAS'] ])
-        table.append([ 'Not Found', g_ipv4_stats['ips_NotFound'] ])
-        stats['ipv4_coverage'] = table
-        # ipv6 origin stats
-        table = [['Validity', 'Count']]
-        table.append([ 'Valid', g_ipv6_stats['origins_Valid'] ])
-        table.append([ 'Invalid Length', g_ipv6_stats['origins_InvalidLength'] ])
-        table.append([ 'Invalid AS', g_ipv6_stats['origins_InvalidAS'] ])
-        table.append([ 'Not Found', g_ipv6_stats['origins_NotFound'] ])
-        stats['ipv6_origins'] = table
-        # ipv6 space coverage stats
-        table = [['Validity', 'Count']]
-        table.append([ 'Valid', g_ipv6_stats['ips_Valid'] ])
-        table.append([ 'Invalid Length', g_ipv6_stats['ips_InvalidLength'] ])
-        table.append([ 'Invalid AS', g_ipv6_stats['ips_InvalidAS'] ])
-        table.append([ 'Not Found', g_ipv6_stats['ips_NotFound'] ])
-        stats['ipv6_coverage'] = table
-        table = [['Validity', 'Count']]
-        table.append([ 'Valid', g_dash_stats['num_Valid'] ])
-        table.append([ 'Invalid Length', g_dash_stats['num_InvalidLength'] ])
-        table.append([ 'Invalid AS', g_dash_stats['num_InvalidAS'] ])
-        stats['table_roa'] = table
-        table_all = list(table)
-        table_all.append([ 'Not Found', g_dash_stats['num_NotFound'] ])
-        stats['table_all'] = table_all
+        # # ipv4 origin stats
+        # table = [['Validity', 'Count']]
+        # table.append([ 'Valid', g_ipv4_stats['origins_Valid'] ])
+        # table.append([ 'Invalid Length', g_ipv4_stats['origins_InvalidLength'] ])
+        # table.append([ 'Invalid AS', g_ipv4_stats['origins_InvalidAS'] ])
+        # table.append([ 'Not Found', g_ipv4_stats['origins_NotFound'] ])
+        # stats['ipv4_origins'] = table
+        # # ipv4 space coverage stats
+        # table = [['Validity', 'Count']]
+        # table.append([ 'Valid', g_ipv4_stats['ips_Valid'] ])
+        # table.append([ 'Invalid Length', g_ipv4_stats['ips_InvalidLength'] ])
+        # table.append([ 'Invalid AS', g_ipv4_stats['ips_InvalidAS'] ])
+        # table.append([ 'Not Found', g_ipv4_stats['ips_NotFound'] ])
+        # stats['ipv4_coverage'] = table
+        # # ipv6 origin stats
+        # table = [['Validity', 'Count']]
+        # table.append([ 'Valid', g_ipv6_stats['origins_Valid'] ])
+        # table.append([ 'Invalid Length', g_ipv6_stats['origins_InvalidLength'] ])
+        # table.append([ 'Invalid AS', g_ipv6_stats['origins_InvalidAS'] ])
+        # table.append([ 'Not Found', g_ipv6_stats['origins_NotFound'] ])
+        # stats['ipv6_origins'] = table
+        # # ipv6 space coverage stats
+        # table = [['Validity', 'Count']]
+        # table.append([ 'Valid', g_ipv6_stats['ips_Valid'] ])
+        # table.append([ 'Invalid Length', g_ipv6_stats['ips_InvalidLength'] ])
+        # table.append([ 'Invalid AS', g_ipv6_stats['ips_InvalidAS'] ])
+        # table.append([ 'Not Found', g_ipv6_stats['ips_NotFound'] ])
+        # stats['ipv6_coverage'] = table
+        # table = [['Validity', 'Count']]
+        # table.append([ 'Valid', g_dash_stats['num_Valid'] ])
+        # table.append([ 'Invalid Length', g_dash_stats['num_InvalidLength'] ])
+        # table.append([ 'Invalid AS', g_dash_stats['num_InvalidAS'] ])
+        # stats['table_roa'] = table
+        # table_all = list(table)
+        # table_all.append([ 'Not Found', g_dash_stats['num_NotFound'] ])
+        # stats['table_all'] = table_all
         stats['latest_ts'] = g_dash_stats['latest_ts']
+        stats['source'] = g_dash_stats['source']
+        stats['last24h'] = g_last24h_stats
     except Exception, e:
         logging.exception ("stats with: " + e.message)
         print "stats: error " + e.message
