@@ -111,16 +111,6 @@
                         <div class="row">
                             <div class="col-md-4 col-xs-12">
                                 <h4>by the numbers</h4>
-                            </div>
-                            <div class="col-md-4 col-xs-12">
-                                <h4>Advertised Prefix Origins</h4>
-                            </div>
-                            <div class="col-md-4 col-xs-12">
-                                <h4>RPKI verifiable Origins</h4>
-                            </div>
-                        </div> <!-- row -->
-                        <div class="row row-eq-height">
-                            <div class="col-md-4 col-xs-12">
                                 <ul class="list-group">
                                     <li class="clearfix lead list-group-item">
                                         <span class="label label-success"># {{ stats.num_Valid }}</span>
@@ -145,10 +135,12 @@
                                 </ul>
                             </div> <!-- div panel body col left -->
                             <div class="col-md-4 col-xs-12">
-                                <div id="dChartAll" style="height: 100%"></div>
+                                <h4>Advertised Prefix Origins</h4>
+                                <div id="dChartAll" style="height: 290px"></div>
                             </div> <!-- div panel body col right -->
                             <div class="col-md-4 col-xs-12">
-                                <div id="dChartROA" style="height: 100%"></div>
+                                <h4>RPKI verifiable Origins</h4>
+                                <div id="dChartROA" style="height: 290px"></div>
                             </div> <!-- div panel body col right -->
                         </div> <!-- div row-eq-height -->
                     </div> <!-- div panel body -->

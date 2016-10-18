@@ -3,8 +3,10 @@
     <script type="text/javascript" src="https://www.google.com/jsapi"></script>
     <script type="text/javascript">
       google.load("visualization", "1", {packages:["corechart"], 'language': 'en'});
-      google.setOnLoadCallback(drawChart);
-      function drawChart() {
+      google.setOnLoadCallback(drawLineCharts);
+      google.setOnLoadCallback(drawPieCharts);
+
+      function drawPieCharts() {
         var data_all_origins = google.visualization.arrayToDataTable({{ stats.table_all|tojson }});
         var view_roa_origins = new google.visualization.DataView(data_all_origins);
         view_roa_origins.hideRows([3]); // skip row with NotFound
@@ -69,20 +71,37 @@
                         <p class="text-primary lead">
                             This page provides a variety of statistics on the latest RPKI origin
                             AS validation results. Some of the graphs shown below may include
-                            historical (e.g. last 24h) or data from thirdparties such as the RIRs.
-                            It covers all IP prefix advertised by the given BGP source and up to
-                            the most current timestamp.
-                        </p>
-                        <p class="text-info">
-                            Please note that the number of prefix to origin AS relations is
-                            higher than the number of distinct IP prefixes advertised in the
-                            BGP. A certain IP prefix can be announced by multiple ASes, thus
-                            has several origins.
+                            historical (e.g. last 24h) or data from third parties such as the RIRs.
+                            The statistics cover all IP prefix advertised by the given BGP source
+                            and up to a certain timestamp, as shown above.
                         </p>
                     </div>
                 </div>
             </div>
         </div>
+        <div class="row">
+            <div class="col-xs-12">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h2>RPKI Validition Results over last 24h</h2>
+                    </div>
+                    <div class="panel-body">
+                        <p class="text-info">
+                        </p>
+                        <div class="row row-eq-height">
+                            <div class="col-md-6 col-xs-12">
+                                <h4>Advertised Prefix Origins</h4>
+                                <div id="lChartAll" style="height: 100%"></div>
+                            </div> <!-- div panel body col right -->
+                            <div class="col-md-6 col-xs-12">
+                                <h4>RPKI verifiable Origins</h4>
+                                <div id="lChartROA" style="height: 100%"></div>
+                            </div> <!-- div panel body col right -->
+                        </div> <!-- div row-eq-height -->
+                    </div> <!-- div panel body -->
+                </div> <!-- div panel -->
+            </div> <!-- div col stats -->
+        </div><!-- div row  -->
         <div class="row">
             <div class="col-md-6 col-xs-12"><div class="panel panel-default">
                 <div class="panel-heading">
