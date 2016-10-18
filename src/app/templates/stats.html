@@ -12,7 +12,7 @@
             ldata_all.addColumn('number', 'Invalid Length');
             ldata_all.addColumn('number', 'Invalid AS');
             ldata_all.addColumn('number', 'Not Found');
-            ldata_all_json = {{ stats.last24h|tojson }}
+            var ldata_all_json = {{ stats.last24h|tojson }};
             $.each(ldata_all_json, function(i,row) {
                 ldata_all.addRow([
                     (new Date(row.ts*1000)),
@@ -20,6 +20,7 @@
                     parseInt(row.num_InvalidLength),
                     parseInt(row.num_InvalidAS),
                     parseInt(row.num_NotFound)
+                ]);
             });
 
             var ldata_roa = new google.visualization.DataView(ldata_all);
@@ -34,7 +35,7 @@
                     3: { color: '#888888' }
                 },
                 legend:{position: 'top'},
-                chartArea:{left:'5%',top:'10%',width:'90%',height:'90%'}
+                chartArea:{left:'10%',top:'10%',width:'80%',height:'70%'}
             };
             var lopts_roa = {
                 hAxis:{format: 'yy/MM/dd\nHH:mm'},
@@ -44,7 +45,7 @@
                     2: { color: '#e31a1c' }
                 },
                 legend:{position: 'top'},
-                chartArea:{left:'5%',top:'10%',width:'90%',height:'90%'}
+                chartArea:{left:'10%',top:'10%',width:'80%',height:'70%'}
             };
 
             var lchart_all = new google.visualization.LineChart(document.getElementById('lChartAll24h'));
@@ -82,19 +83,32 @@
             <div class="col-xs-12">
                 <div class="panel panel-default">
                     <div class="panel-heading">
-                        <h2>RPKI Validition Results over last 24h</h2>
+                        <h2>
+                            RPKI Validition Results over last 24h
+                            <button type="button" class="btn btn-info pull-right" data-toggle="collapse" data-target="#info_last24h">
+                                <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+                            </button>
+                        </h2>
                     </div>
                     <div class="panel-body">
-                        <p class="text-info">
-                        </p>
+                        <div class="row">
+                            <div id="info_last24h" class="col-xs-12 alert alert-info collapse" role="alert">
+                                <p class="text-justify">
+                                    The graphs below show the RPKI validation states for all prefix origins
+                                    observed during the last 24h.
+                                    <i>Note</i> that the number of prefix to origin AS relations is likely higher than the number of distinct IP prefixes advertised in the BGP.
+                                    A certain IP prefix might be announced by multiple ASes, thus it has several origins.
+                                </p>
+                            </div>
+                        </div>
                         <div class="row row-eq-height">
                             <div class="col-md-6 col-xs-12">
                                 <h4>Advertised Prefix Origins</h4>
-                                <div id="lChartAll24h" style="height: 100%"></div>
-                            </div> <!-- div panel body col right -->
+                                <div id="lChartAll24h" style="height: 280px"></div>
+                            </div> <!-- div panel body col left -->
                             <div class="col-md-6 col-xs-12">
                                 <h4>RPKI verifiable Origins</h4>
-                                <div id="lChartROA24h" style="height: 100%"></div>
+                                <div id="lChartROA24h" style="height: 280px"></div>
                             </div> <!-- div panel body col right -->
                         </div> <!-- div row-eq-height -->
                     </div> <!-- div panel body -->
