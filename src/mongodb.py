@@ -52,6 +52,7 @@ def output_latest(dbconnstr):
                 logging.exception ("MapReduce failed with: " + e.message)
         # endif
         last_validity_count = db.validity.count()
+        time.sleep(BULK_TIMEOUT)
 
 def output_stat(dbconnstr, interval):
     """Generate and store validation statistics in database"""

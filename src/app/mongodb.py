@@ -12,7 +12,7 @@ def get_ipversion_stats(dbconnstr):
     print "get_ipversion_stats"
     client = MongoClient(dbconnstr)
     db = client.get_default_database()
-    types = ['origins_', 'ips_']
+    types = ['num_', 'ips_']
     ipv4_stats = dict()
     for t in types:
         ipv4_stats[t+'Valid'] = 0
@@ -52,12 +52,11 @@ def get_ipversion_stats(dbconnstr):
                 if r['_id'] == None:
                     logging.debug("emtpy record, skipping")
                     continue
-                logging.debug(str(r))
                 ip = IPNetwork(r['_id'])
                 b_val = {"Valid": False, "InvalidLength": False, "InvalidAS": False, "NotFound": False}
                 if ip.version == 4:
                     for o in r['origins']:
-                        ipv4_stats["origins_"+o['validity']] += 1
+                        ipv4_stats["num_"+o['validity']] += 1
                         b_val[o['validity']] = True
                     if b_val['Valid'] == True:
                         ipv4_stats["ips_Valid"] += ip.size
@@ -73,7 +72,7 @@ def get_ipversion_stats(dbconnstr):
                         ipv4_stats["pfx_NotFound"].append(ip.prefixlen)
                 elif ip.version == 6:
                     for o in r['origins']:
-                        ipv6_stats["origins_"+o['validity']] += 1
+                        ipv6_stats["num_"+o['validity']] += 1
                         b_val[o['validity']] = True
                     if b_val['Valid'] == True:
                         ipv6_stats["ips_Valid"] += ip.size
@@ -87,9 +86,12 @@ def get_ipversion_stats(dbconnstr):
                     elif b_val['NotFound'] == True:
                         ipv6_stats["ips_NotFound"] += ip.size
                         ipv6_stats["pfx_NotFound"].append(ip.prefixlen)
+                    # end if b_val
+                # end if ip.version
+            # end for results
         except Exception, e:
-            logging.exception ("QUERY failed with: " + e.message)
-            print "get_ipversion_stats: error"
+            logging.exception ("get_ipversion_stats, error: " + e.message)
+            print "get_ipversion_stats, error: " +e.message
             ipv4_stats = None
             ipv6_stats = None
         # end try
@@ -120,7 +122,8 @@ def get_dash_stats(dbconnstr):
             ts_tmp = db.validity_latest.find_one(projection={'value.timestamp': True, '_id': False}, sort=[('value.timestamp', DESCENDING)])['value']['timestamp']
             stats['latest_ts'] = datetime.fromtimestamp(int(ts_tmp)).strftime('%Y-%m-%d %H:%M:%S')
         except Exception, e:
-            logging.exception ("QUERY failed with: " + e.message)
+            logging.exception ("get_dash_stats, error: " + e.message)
+            print "get_dash_stats, error: " + e.message
             stats = None
         # end try
     # end if
@@ -136,8 +139,9 @@ def get_last24h_stats(dbconnstr):
             ts24 = int(time.time()) - (3600*24) # last 24h
             last24h = list(db.validity_stats.find({'ts': {'$gt': ts24}},{'_id':0}).sort('ts', DESCENDING))
         except Exception, e:
-            logging.exception ("QUERY failed with: " + e.message)
-            stats = None
+            logging.exception ("get_last24h_stats, error: " + e.message)
+            print "get_last24h_stats, error: " + e.message
+            last24h = None
         # end try
     # end if
     return last24h
@@ -157,7 +161,8 @@ def get_validation_list(dbconnstr, state):
                 data['roas'] = r['value']['validated_route']['validity']['VRPs']
                 rlist.append(data)
         except Exception, e:
-            logging.exception ("QUERY failed with: " + e.message)
+            logging.exception ("get_validation_list, error: " + e.message)
+            print "get_validation_list, error: " + e.message
     return rlist
 
 def get_validation_prefix(dbconnstr, search_string):

@@ -4,6 +4,12 @@
     <script type="text/javascript">
         google.load("visualization", "1", {packages:["corechart"], 'language': 'en'});
         google.setOnLoadCallback(drawLineCharts);
+        {% if stats.ipv4 %}
+        google.setOnLoadCallback(drawIPv4Charts);
+        {% endif %}
+        {% if stats.ipv6 %}
+        google.setOnLoadCallback(drawIPv6Charts);
+        {% endif %}
 
         function drawLineCharts() {
             var ldata_all = new google.visualization.DataTable();
@@ -53,6 +59,80 @@
             lchart_all.draw(ldata_all, lopts_all);
             lchart_roa.draw(ldata_roa, lopts_roa);
         }
+        {% if stats.ipv4 %}
+        function drawIPv4Charts() {
+            var data_ipv4_origins = google.visualization.arrayToDataTable([
+                ['Validity', 'Count'],
+                ['Valid',           {{ stats.ipv4_data.num_Valid }} ],
+                ['Invalid Length',  {{ stats.ipv4_data.num_InvalidLength }} ],
+                ['Invalid AS',      {{ stats.ipv4_data.num_InvalidAS }} ],
+                ['Not Found',       {{ stats.ipv4_data.num_NotFound }} ]
+            ]);
+            var data_ipv4_coverage = google.visualization.arrayToDataTable([
+                ['Validity', 'Count'],
+                ['Valid',           {{ stats.ipv4_data.ips_Valid }} ],
+                ['Invalid Length',  {{ stats.ipv4_data.ips_InvalidLength }} ],
+                ['Invalid AS',      {{ stats.ipv4_data.ips_InvalidAS }} ],
+                ['Not Found',       {{ stats.ipv4_data.ips_NotFound }} ]
+            ]);
+
+            var pc_opts = {
+                legend:{position: 'left'},
+                enableInteractivity: false,
+                slices: {
+                    0: { color: '#33a02c' },
+                    1: { color: '#ff7f00' },
+                    2: { color: '#e31a1c' },
+                    3: { color: '#888888', offset: 0.15 }
+                },
+                is3D: true,
+                chartArea:{left:'5%',top:'5%',width:'90%',height:'95%'}
+            };
+
+            var pc_ipv4_origins = new google.visualization.PieChart(document.getElementById('pc_ipv4_origins'));
+            var pc_ipv4_coverage = new google.visualization.PieChart(document.getElementById('pc_ipv4_coverage'));
+
+            pc_ipv4_origins.draw(data_ipv4_origins, pc_opts);
+            pc_ipv4_coverage.draw(data_ipv4_coverage, pc_opts);
+        }
+        {% endif %}
+        {% if stats.ipv6 %}
+        function drawIPv6Charts() {
+            var data_ipv6_origins = google.visualization.arrayToDataTable([
+                ['Validity', 'Count'],
+                ['Valid',           {{ stats.ipv6_data.num_Valid }} ],
+                ['Invalid Length',  {{ stats.ipv6_data.num_InvalidLength }} ],
+                ['Invalid AS',      {{ stats.ipv6_data.num_InvalidAS }} ],
+                ['Not Found',       {{ stats.ipv6_data.num_NotFound }} ]
+            ]);
+            var data_ipv6_coverage = google.visualization.arrayToDataTable([
+                ['Validity', 'Count'],
+                ['Valid',           {{ stats.ipv6_data.ips_Valid }} ],
+                ['Invalid Length',  {{ stats.ipv6_data.ips_InvalidLength }} ],
+                ['Invalid AS',      {{ stats.ipv6_data.ips_InvalidAS }} ],
+                ['Not Found',       {{ stats.ipv6_data.ips_NotFound }} ]
+            ]);
+
+            var pc_opts = {
+                legend:{position: 'left'},
+                enableInteractivity: false,
+                slices: {
+                    0: { color: '#33a02c' },
+                    1: { color: '#ff7f00' },
+                    2: { color: '#e31a1c' },
+                    3: { color: '#888888', offset: 0.15 }
+                },
+                is3D: true,
+                chartArea:{left:'5%',top:'5%',width:'90%',height:'95%'}
+            };
+
+            var pc_ipv6_origins = new google.visualization.PieChart(document.getElementById('pc_ipv6_origins'));
+            var pc_ipv6_coverage = new google.visualization.PieChart(document.getElementById('pc_ipv6_coverage'));
+
+            pc_ipv6_origins.draw(data_ipv6_origins, pc_opts);
+            pc_ipv6_coverage.draw(data_ipv6_coverage, pc_opts);
+        }
+        {% endif %}
     </script>
 {% endblock %}
 {% block content %}
@@ -94,14 +174,13 @@
                         <div class="row">
                             <div id="info_last24h" class="col-xs-12 alert alert-info collapse" role="alert">
                                 <p class="text-justify">
-                                    The graphs below show the RPKI validation states for all prefix origins
-                                    observed during the last 24h.
+                                    The graphs below show the RPKI validation states for all prefix origins observed during the last 24h.
                                     <i>Note</i> that the number of prefix to origin AS relations is likely higher than the number of distinct IP prefixes advertised in the BGP.
                                     A certain IP prefix might be announced by multiple ASes, thus it has several origins.
                                 </p>
                             </div>
                         </div>
-                        <div class="row row-eq-height">
+                        <div class="row">
                             <div class="col-md-6 col-xs-12">
                                 <h4>Advertised Prefix Origins</h4>
                                 <div id="lChartAll24h" style="height: 280px"></div>
@@ -115,4 +194,80 @@
                 </div> <!-- div panel -->
             </div> <!-- div col stats -->
         </div><!-- div row  -->
+        {% if stats.ipv4 %}
+        <div class="row">
+            <div class="col-xs-12">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h2>
+                            RPKI Validition Results for IPv4
+                            <button type="button" class="btn btn-info pull-right" data-toggle="collapse" data-target="#info_ipv4">
+                                <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+                            </button>
+                        </h2>
+                    </div>
+                    <div class="panel-body">
+                        <div class="row">
+                            <div id="info_ipv4" class="col-xs-12 alert alert-info collapse" role="alert">
+                                <p class="text-justify">
+                                    The graphs below show the RPKI validation states for all currently advertised IPv4 prefixes.
+                                    They show relative validity over number of prefix origins and how much of the advertised IPv4 address space is covered by the RPKI.
+                                    <i>Note</i> that a distinct IP prefix can have multiple origins, and is counted several times.
+                                    However, for address space coverage each prefix is counted only once, with respect to its validity (valid, invalid length, invalid AS, not found).
+                                </p>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 col-xs-12">
+                                <h4>Number of Adverised Prefix Origins</h4>
+                                <div id="pc_ipv4_origins" style="height: 280px"></div>
+                            </div> <!-- div panel body col left -->
+                            <div class="col-md-6 col-xs-12">
+                                <h4>Coverage of Adverised Address Space</h4>
+                                <div id="pc_ipv4_coverage" style="height: 280px"></div>
+                            </div> <!-- div panel body col right -->
+                        </div> <!-- div row-eq-height -->
+                    </div> <!-- div panel body -->
+                </div> <!-- div panel -->
+            </div> <!-- div col stats -->
+        </div><!-- div row  -->
+        {% endif %}
+        {% if stats.ipv6 %}
+        <div class="row">
+            <div class="col-xs-12">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h2>
+                            RPKI Validition Results for IPv6
+                            <button type="button" class="btn btn-info pull-right" data-toggle="collapse" data-target="#info_ipv4">
+                                <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+                            </button>
+                        </h2>
+                    </div>
+                    <div class="panel-body">
+                        <div class="row">
+                            <div id="info_ipv4" class="col-xs-12 alert alert-info collapse" role="alert">
+                                <p class="text-justify">
+                                    The graphs below show the RPKI validation states for all currently advertised IPv6 prefixes.
+                                    They show relative validity over number of prefix origins and how much of the advertised IPv6 address space is covered by the RPKI.
+                                    <i>Note</i> that a distinct IP prefix can have multiple origins, and is counted several times.
+                                    However, for address space coverage each prefix is counted only once, with respect to its validity (valid, invalid length, invalid AS, not found).
+                                </p>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 col-xs-12">
+                                <h4>Number of Adverised Prefix Origins</h4>
+                                <div id="pc_ipv6_origins" style="height: 280px"></div>
+                            </div> <!-- div panel body col left -->
+                            <div class="col-md-6 col-xs-12">
+                                <h4>Coverage of Adverised Address Space</h4>
+                                <div id="pc_ipv6_coverage" style="height: 280px"></div>
+                            </div> <!-- div panel body col right -->
+                        </div> <!-- div row-eq-height -->
+                    </div> <!-- div panel body -->
+                </div> <!-- div panel -->
+            </div> <!-- div col stats -->
+        </div><!-- div row  -->
+        {% endif %}
 {% endblock %}
