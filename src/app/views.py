@@ -21,13 +21,14 @@ logging.basicConfig(level=logging.CRITICAL, format='%(asctime)s : %(levelname)s 
 g_dash_stats = dict()
 g_ipv4_stats = dict()
 g_ipv6_stats = dict()
+g_last24h_stats = []
 g_stats_counter = config.UPDATE_INTERVAL_FACTOR
 
 def update_validation_stats():
-    global g_stats_counter, g_dash_stats, g_ipv4_stats, g_ipv6_stats
+    global g_stats_counter, g_dash_stats, g_ipv4_stats, g_ipv6_stats, g_last24h_stats
     g_stats_counter += 1
     #app.logging.debug("update_validation_stats")
-    dash_stats = get_latest_stats(config.DATABASE_CONN)
+    dash_stats = get_dash_stats(config.DATABASE_CONN)
     if dash_stats != None:
         dash_stats['source'] = config.BGPMON_SOURCE
         dash_stats['rel_Valid'] = round( (float(dash_stats['num_Valid'])/float(dash_stats['num_Total']))*100 , 2)
@@ -37,6 +38,9 @@ def update_validation_stats():
         g_dash_stats = dash_stats
     if g_stats_counter > config.UPDATE_INTERVAL_FACTOR:
         g_stats_counter = 0
+        last24h_stats = get_last24h_stats(config.DATABASE_CONN)
+        if last24h_stats != None:
+            g_last24h_stats = last24h_stats
         ipv4_stats, ipv6_stats = get_ipversion_stats(config.DATABASE_CONN)
         if ipv4_stats != None:
             g_ipv4_stats = ipv4_stats

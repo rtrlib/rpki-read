@@ -96,7 +96,7 @@ def get_ipversion_stats(dbconnstr):
     # end if
     return ipv4_stats, ipv6_stats
 
-def get_latest_stats(dbconnstr):
+def get_dash_stats(dbconnstr):
     client = MongoClient(dbconnstr)
     db = client.get_default_database()
     # init stats results
@@ -126,36 +126,21 @@ def get_latest_stats(dbconnstr):
     # end if
     return stats
 
-def get_validation_stats(dbconnstr):
+def get_last24h_stats(dbconnstr):
     client = MongoClient(dbconnstr)
     db = client.get_default_database()
 
-    stats = dict()
-    stats['latest_ts'] = 'now'
-    stats['num_Valid'] = 0
-    stats['num_InvalidAS'] = 0
-    stats['num_InvalidLength'] = 0
-    stats['num_NotFound'] = 0
-    stats['stats_all'] = []
-    if "validity_latest" in db.collection_names() and db.validity_latest.count() > 0:
+    last24h = []
+    if "validity_stats" in db.collection_names() and db.validity_stats.count() > 0:
         try:
-            pipeline = [
-                { "$match": { 'value.type': 'announcement'} },
-                { "$group": { "_id": "$value.validated_route.validity.state", "count": { "$sum": 1 } } }
-            ]
-            results = list(db.validity_latest.aggregate(pipeline, allowDiskUse=True ))
-            for i in range(0,len(results)):
-                stats["num_"+results[i]['_id']] = results[i]['count']
             ts24 = int(time.time()) - (3600*24) # last 24h
-            stats['stats_all'] = list(db.validity_stats.find({'ts': {'$gt': ts24}},{'_id':0}).sort('ts', DESCENDING))
-            ts_tmp = db.validity_latest.find_one(projection={'value.timestamp': True, '_id': False}, sort=[('value.timestamp', DESCENDING)])['value']['timestamp']
-            stats['latest_ts'] = datetime.fromtimestamp(int(ts_tmp)).strftime('%Y-%m-%d %H:%M:%S')
+            last24h = list(db.validity_stats.find({'ts': {'$gt': ts24}},{'_id':0}).sort('ts', DESCENDING))
         except Exception, e:
             logging.exception ("QUERY failed with: " + e.message)
             stats = None
         # end try
     # end if
-    return stats
+    return last24h
 
 def get_validation_list(dbconnstr, state):
     client = MongoClient(dbconnstr)
