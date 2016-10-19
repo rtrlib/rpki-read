@@ -21,33 +21,62 @@ logging.basicConfig(level=logging.CRITICAL, format='%(asctime)s : %(levelname)s 
 g_dash_stats = dict()
 g_ipv4_stats = dict()
 g_ipv6_stats = dict()
+g_last24h_stats = list()
 g_stats_counter = config.UPDATE_INTERVAL_FACTOR
 
-def update_validation_stats():
-    global g_stats_counter, g_dash_stats, g_ipv4_stats, g_ipv6_stats
-    g_stats_counter += 1
-    #app.logging.debug("update_validation_stats")
-    dash_stats = get_latest_stats(config.DATABASE_CONN)
-    if dash_stats != None:
-        dash_stats['source'] = config.BGPMON_SOURCE
-        dash_stats['rel_Valid'] = round( (float(dash_stats['num_Valid'])/float(dash_stats['num_Total']))*100 , 2)
-        dash_stats['rel_InvalidLength'] = round( (float(dash_stats['num_InvalidLength'])/float(dash_stats['num_Total']))*100 , 2)
-        dash_stats['rel_InvalidAS'] = round( (float(dash_stats['num_InvalidAS'])/float(dash_stats['num_Total']))*100 , 2)
-        dash_stats['rel_NotFound'] = round( (float(dash_stats['num_NotFound'])/float(dash_stats['num_Total']))*100 , 2)
-        g_dash_stats = dash_stats
-    if g_stats_counter > config.UPDATE_INTERVAL_FACTOR:
-        g_stats_counter = 0
+def update_dash_stats():
+    print "update_dash_stats, start"
+    global g_dash_stats
+    try:
+        dash_stats = get_dash_stats(config.DATABASE_CONN)
+        if dash_stats != None:
+            print "update_dash_stats, success"
+            dash_stats['source'] = config.BGPMON_SOURCE
+            dash_stats['rel_Valid'] = round( (float(dash_stats['num_Valid'])/float(dash_stats['num_Total']))*100 , 2)
+            dash_stats['rel_InvalidLength'] = round( (float(dash_stats['num_InvalidLength'])/float(dash_stats['num_Total']))*100 , 2)
+            dash_stats['rel_InvalidAS'] = round( (float(dash_stats['num_InvalidAS'])/float(dash_stats['num_Total']))*100 , 2)
+            dash_stats['rel_NotFound'] = round( (float(dash_stats['num_NotFound'])/float(dash_stats['num_Total']))*100 , 2)
+            g_dash_stats = dash_stats
+    except Exception, e:
+        logging.exception ("update_dash_stats, error: " + e.message)
+        print "update_dash_stats, error: " + e.message
+
+def update_last24h_stats():
+    print "update_last24h_stats, start"
+    global g_last24h_stats
+    try:
+        last24h_stats = get_last24h_stats(config.DATABASE_CONN)
+        if last24h_stats != None:
+            print "update_last24h_stats, success"
+            g_last24h_stats = last24h_stats
+    except Exception, e:
+        logging.exception ("update_last24h_stats, error: " + e.message)
+        print "update_last24h_stats, error: " + e.message
+
+def update_ipversion_stats():
+    print "update_ipversion_stats, start"
+    global g_ipv4_stats, g_ipv6_stats
+    try:
         ipv4_stats, ipv6_stats = get_ipversion_stats(config.DATABASE_CONN)
         if ipv4_stats != None:
+            print "update_ipversion_stats, success ipv4"
             g_ipv4_stats = ipv4_stats
         if ipv6_stats != None:
+            print "update_ipversion_stats, success ipv6"
             g_ipv6_stats = ipv6_stats
+    except Exception, e:
+        logging.exception ("update_ipversion_stats, error: " + e.message)
+        print "update_ipversion_stats, error: " + e.message
 
 @app.before_first_request
 def initialize():
     apsched = BackgroundScheduler()
-    update_validation_stats()
-    apsched.add_job(update_validation_stats, 'interval', seconds=config.UPDATE_INTERVAL_STATS)
+    update_dash_stats()
+    update_last24h_stats()
+    update_ipversion_stats()
+    apsched.add_job(update_dash_stats, 'interval', seconds=config.UPDATE_INTERVAL_STATS, id="job_dash")
+    apsched.add_job(update_last24h_stats, 'interval', seconds=config.UPDATE_INTERVAL_STATS*config.UPDATE_INTERVAL_FACTOR, id="job_last24h")
+    apsched.add_job(update_ipversion_stats, 'interval', seconds=config.UPDATE_INTERVAL_STATS*config.UPDATE_INTERVAL_FACTOR, id="job_ipversion")
     apsched.start()
 
 def _get_table_json(state):
@@ -71,7 +100,8 @@ def about():
 @app.route('/dashboard')
 @app.route('/search', methods=['GET'])
 def dashboard():
-    return render_template("dashboard.html", stats=g_dash_stats)
+    if g_dash_stats != None:
+        return render_template("dashboard.html", stats=g_dash_stats)
 
 ## stats handler
 @app.route('/stats')
@@ -79,47 +109,21 @@ def stats():
     stats=dict()
     try:
         # ipv4 origin stats
-        table = [['Validity', 'Count']]
-        table.append([ 'Valid', g_ipv4_stats['origins_Valid'] ])
-        table.append([ 'Invalid Length', g_ipv4_stats['origins_InvalidLength'] ])
-        table.append([ 'Invalid AS', g_ipv4_stats['origins_InvalidAS'] ])
-        table.append([ 'Not Found', g_ipv4_stats['origins_NotFound'] ])
-        stats['ipv4_origins'] = table
-        # ipv4 space coverage stats
-        table = [['Validity', 'Count']]
-        table.append([ 'Valid', g_ipv4_stats['ips_Valid'] ])
-        table.append([ 'Invalid Length', g_ipv4_stats['ips_InvalidLength'] ])
-        table.append([ 'Invalid AS', g_ipv4_stats['ips_InvalidAS'] ])
-        table.append([ 'Not Found', g_ipv4_stats['ips_NotFound'] ])
-        stats['ipv4_coverage'] = table
-        # ipv6 origin stats
-        table = [['Validity', 'Count']]
-        table.append([ 'Valid', g_ipv6_stats['origins_Valid'] ])
-        table.append([ 'Invalid Length', g_ipv6_stats['origins_InvalidLength'] ])
-        table.append([ 'Invalid AS', g_ipv6_stats['origins_InvalidAS'] ])
-        table.append([ 'Not Found', g_ipv6_stats['origins_NotFound'] ])
-        stats['ipv6_origins'] = table
-        # ipv6 space coverage stats
-        table = [['Validity', 'Count']]
-        table.append([ 'Valid', g_ipv6_stats['ips_Valid'] ])
-        table.append([ 'Invalid Length', g_ipv6_stats['ips_InvalidLength'] ])
-        table.append([ 'Invalid AS', g_ipv6_stats['ips_InvalidAS'] ])
-        table.append([ 'Not Found', g_ipv6_stats['ips_NotFound'] ])
-        stats['ipv6_coverage'] = table
-        table = [['Validity', 'Count']]
-        table.append([ 'Valid', g_dash_stats['num_Valid'] ])
-        table.append([ 'Invalid Length', g_dash_stats['num_InvalidLength'] ])
-        table.append([ 'Invalid AS', g_dash_stats['num_InvalidAS'] ])
-        stats['table_roa'] = table
-        table_all = list(table)
-        table_all.append([ 'Not Found', g_dash_stats['num_NotFound'] ])
-        stats['table_all'] = table_all
+        if ('num_NotFound' in g_ipv4_stats) and (g_ipv4_stats['num_NotFound'] > 0):
+        #if ('num_NotFound' in g_ipv4_stats):
+            stats['ipv4'] = '1'
+            stats['ipv4_data'] = g_ipv4_stats
+        if ('num_NotFound' in g_ipv6_stats) and (g_ipv6_stats['num_NotFound'] > 0):
+        #if ('num_NotFound' in g_ipv6_stats):
+            stats['ipv6'] = '1'
+            stats['ipv6_data'] = g_ipv6_stats
         stats['latest_ts'] = g_dash_stats['latest_ts']
+        stats['source'] = g_dash_stats['source']
+        stats['last24h'] = g_last24h_stats
+        return render_template("stats.html", stats=stats)
     except Exception, e:
         logging.exception ("stats with: " + e.message)
         print "stats: error " + e.message
-    else:
-        return render_template("stats.html", stats=stats)
 
 ## table handler
 @app.route('/valid')
@@ -161,7 +165,8 @@ def search_json():
     search = request.args.get('search')
     validity_now = get_validation_prefix(config.DATABASE_CONN, search)
     ret = list()
-    ret.append(validity_now[0])
+    if validity_now != None:
+        ret.extend(validity_now)
     # validity_old = get_validation_history(config.DATABASE_CONN, validity_now[0]['prefix'])
     # cmp = ret[0]
     # for v in validity_old:
