@@ -13,6 +13,7 @@ def get_ipversion_stats(dbconnstr):
     client = MongoClient(dbconnstr)
     db = client.get_default_database()
     types = ['num_', 'ips_']
+    # init ipv4 stats
     ipv4_stats = dict()
     for t in types:
         ipv4_stats[t+'Valid'] = 0
@@ -23,6 +24,7 @@ def get_ipversion_stats(dbconnstr):
     ipv4_stats['pfx_InvalidAS'] = []
     ipv4_stats['pfx_InvalidLength'] = []
     ipv4_stats['pfx_NotFound'] = []
+    # init ipv6 stats
     ipv6_stats = dict()
     for t in types:
         ipv6_stats[t+'Valid'] = 0
@@ -133,7 +135,7 @@ def get_last24h_stats(dbconnstr):
     client = MongoClient(dbconnstr)
     db = client.get_default_database()
 
-    last24h = []
+    last24h = None
     if "validity_stats" in db.collection_names() and db.validity_stats.count() > 0:
         try:
             ts24 = int(time.time()) - (3600*24) # last 24h
@@ -167,29 +169,33 @@ def get_validation_list(dbconnstr, state):
 
 def get_validation_prefix(dbconnstr, search_string):
     prefix = None
+    result = None
     try:
         ipa = IPNetwork(search_string).ip
     except Exception, e:
         logging.exception ("IP address parse failed with: " + e.message)
     else:
-        logging.info(ipa)
         client = MongoClient(dbconnstr)
         db = client.get_default_database()
-        if "validity_latest" in db.collection_names() and db.validity_latest.count() > 0:
-            try:
-                prefixes = list(db.validity_latest.find({},{'_id': 1}))
-                for p in prefixes:
-                    ipp = IPNetwork(p['_id'])
-                    if ipa in ipp:
-                        if prefix == None:
+        while prefix == None:
+            if "validity_latest" in db.collection_names() and db.validity_latest.count() > 0:
+                try:
+                    prefixes = list(db.validity_latest.find({},{'_id': 1}))
+                    prefix = IPNetwork("0.0.0.0/0")
+                    for p in prefixes:
+                        ipp = IPNetwork(p['_id'])
+                        if (ipa in ipp) and (ipp.prefixlen > prefix.prefixlen):
                             prefix = ipp
-                        elif ipp.prefixlen > prefix.prefixlen:
-                            prefix = ipp
-            except Exception, e:
-                logging.exception ("SEARCH failed with: " + e.message)
-        if prefix != None:
-            try:
-                r = list(db.validity_latest.find({'_id': str(prefix)}))[0]
+                except Exception, e:
+                    logging.exception ("SEARCH failed with: " + e.message)
+                    prefix = None
+                # end try
+            # end if
+        # end while
+        try:
+            ret = list( db.validity_latest.find({'_id': str(prefix)}) )
+            result = list()
+            for r in ret:
                 data = dict()
                 data['prefix'] = r['_id']
                 data['timestamp'] = r['value']['timestamp']
@@ -200,12 +206,12 @@ def get_validation_prefix(dbconnstr, search_string):
                     data['roas'] = r['value']['validated_route']['validity']['VRPs']
                 else:
                     data['state'] = 'withdraw'
-                prefix = list()
-                prefix.append(data)
-            except Exception, e:
-                logging.exception ("SEARCH failed with: " + e.message)
-        # end if
-    return prefix
+                result.append(data)
+        except Exception, e:
+            logging.exception ("SEARCH failed with: " + e.message)
+            result = None
+        # end try
+    return result
 
 def get_validation_history(dbconnstr, search_prefix):
     rlist = list()

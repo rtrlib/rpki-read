@@ -165,7 +165,8 @@ def search_json():
     search = request.args.get('search')
     validity_now = get_validation_prefix(config.DATABASE_CONN, search)
     ret = list()
-    ret.append(validity_now[0])
+    if validity_now != None:
+        ret.extend(validity_now)
     # validity_old = get_validation_history(config.DATABASE_CONN, validity_now[0]['prefix'])
     # cmp = ret[0]
     # for v in validity_old:
