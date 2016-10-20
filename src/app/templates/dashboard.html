@@ -79,17 +79,14 @@
                             <div class="progress-bar progress-bar-danger" style="width: {{ stats.rel_InvalidAS }}%">
                                 <span class="sr-only">Invalid AS</span>
                             </div>
-                            <div class="text-center">{{stats.rel_Valid + stats.rel_InvalidLength + stats.rel_InvalidAS}}% Prefix Origins are RPKI verifiable</div>
+                            <div class="text-center">{{stats.rel_Valid + stats.rel_InvalidLength + stats.rel_InvalidAS}}% prefix origins are verifiable by the RPKI</div>
                         </div>
                         <p class="text-primary text-justify lead">
-                            This page provides a realtime overview on the latest RPKI origin
-                            AS validation results. It covers all IP prefix advertised by
-                            the given BGP source and up to the most current timestamp.
-                            The progess bar above shows the current state and coverage of the
-                            RPKI origin validation, i.e., how many prefix origins are verifiable
-                            by a matching ROA. For more and detailed statistics on RPKI validation
-                            state have look at our <a href="/stats">stats</a> page. To look up the
-                            validation state of a certain prefix use the search box in the menu bar.
+                            This page provides a realtime overview on the latest prefix origin validation results using the RPKI.
+                            It covers all IP prefix advertised by the given BGP source and up to the most current timestamp.
+                            The progess bar above shows the current state and coverage of the RPKI origin validation, i.e., how many prefix origins are verifiable by a ROA.
+                            For more and detailed statistics have look at our <a href="/stats">stats</a> page.
+                            To look up the RPKI origin validation result of a certain IP prefix use the search box in the menu bar.
                         </p>
                     </div>
                 </div>
@@ -100,7 +97,7 @@
                 <div class="panel panel-default">
                     <div class="panel-heading">
                         <h2>
-                            Latest RPKI validition results
+                            Latest RPKI validation results
                             <button type="button" class="btn btn-info pull-right" data-toggle="collapse" data-target="#info">
                                 <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
                             </button>
@@ -110,10 +107,10 @@
                         <div class="row">
                             <div id="info" class="col-xs-12 alert alert-info collapse" role="alert">
                                 <p class="text-justify">
-                                    The table and graphs below show the absolute and relative RPKI validation states for all currently visible prefix origins.
-                                    A RPKI verifiable prefix origin has atleast one ROA associated.
+                                    The table and graphs below show the absolute and relative RPKI origin validation results for all currently visible prefix origins.
+                                    A verifiable prefix origin has at least one Route Origin Authorization (ROA) for that prefix in the RPKI.
                                     <i>Note</i> that the number of prefix to origin AS relations is likely higher than the number of distinct IP prefixes advertised in the BGP.
-                                    A certain IP prefix might be announced by multiple ASes, thus it has several origins.
+                                    Because, a certain IP prefix might be announced by multiple ASes, thus it has several origins.
                                 </p>
                             </div>
                         </div>

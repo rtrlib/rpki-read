@@ -149,11 +149,9 @@
                     </div>
                     <div class="panel-body">
                         <p class="text-primary lead">
-                            This page provides a variety of statistics on the latest RPKI origin
-                            AS validation results. Some of the graphs shown below may include
-                            historical (e.g. last 24h) or data from third parties such as the RIRs.
-                            The statistics cover all IP prefix advertised by the given BGP source
-                            and up to a certain timestamp, as shown above.
+                            This page provides a variety of statistics on the latest RPKI origin AS validation results.
+                            Some of the graphs shown below may include historical (e.g. last 24h) or data from third parties such as the RIRs.
+                            The statistics cover all IP prefix advertised by the given BGP source and up to a certain timestamp, as shown above.
                         </p>
                     </div>
                 </div>
@@ -164,7 +162,7 @@
                 <div class="panel panel-default">
                     <div class="panel-heading">
                         <h2>
-                            RPKI validition results over last 24h
+                            RPKI validation results over last 24h
                             <button type="button" class="btn btn-info pull-right" data-toggle="collapse" data-target="#info_last24h">
                                 <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
                             </button>
@@ -174,10 +172,10 @@
                         <div class="row">
                             <div id="info_last24h" class="col-xs-12 alert alert-info collapse" role="alert">
                                 <p class="text-justify">
-                                    The graphs below show the RPKI validation states for all prefix origins observed during the last 24h.
-                                    A RPKI verifiable prefix origin has atleast one ROA associated.
+                                    The graphs below show the RPKI validation results for all prefix origins observed during the last 24h.
+                                    A verifiable prefix origin has at least one Route Origin Authorization (ROA) for that prefix in the RPKI.
                                     <i>Note</i> that the number of prefix to origin AS relations is likely higher than the number of distinct IP prefixes advertised in the BGP.
-                                    A certain IP prefix might be announced by multiple ASes, thus it has several origins.
+                                    Because, a certain IP prefix might be announced by multiple ASes, thus it has several origins.
                                 </p>
                             </div>
                         </div>
@@ -201,7 +199,7 @@
                 <div class="panel panel-default">
                     <div class="panel-heading">
                         <h2>
-                            RPKI validition results for IPv4
+                            RPKI validation results for IPv4
                             <button type="button" class="btn btn-info pull-right" data-toggle="collapse" data-target="#info_ipv4">
                                 <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
                             </button>
@@ -213,8 +211,8 @@
                                 <p class="text-justify">
                                     The graphs below show the RPKI validation states for all currently advertised IPv4 prefixes.
                                     They show relative validity over number of prefix origins and how much of the advertised IPv4 address space is covered by the RPKI.
-                                    <i>Note</i> that a distinct IP prefix can have multiple origins, and is counted several times.
-                                    However, for address space coverage each prefix is counted only once, with respect to its validity (valid, invalid length, invalid AS, not found).
+                                    <i>Note</i> that a distinct IP prefix can have multiple origin AS, and is thus counted several times.
+                                    However, for address space coverage each prefix is counted only once, with preference on validation results in the following order: <i>Valid</i>, <i>Invalid Length</i>, <i>Invalid AS</i>, <i>Not Found</i>.
                                 </p>
                             </div>
                         </div>
@@ -239,7 +237,7 @@
                 <div class="panel panel-default">
                     <div class="panel-heading">
                         <h2>
-                            RPKI validition results for IPv6
+                            RPKI validation results for IPv6
                             <button type="button" class="btn btn-info pull-right" data-toggle="collapse" data-target="#info_ipv4">
                                 <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
                             </button>
