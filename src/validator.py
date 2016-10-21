@@ -17,7 +17,9 @@ from subprocess import PIPE, Popen
 from settings import *
 
 def _get_validity(validation_result_string):
-    """Parse validation result and fill in response information"""
+    """
+    Parse validation result and fill in response information
+    """
     validity = dict()
     validity['code'] = 100
     validity['state'] = 'Error'
@@ -80,7 +82,9 @@ def _get_validity(validation_result_string):
     return validity
 
 def validator(in_queue, out_queue, cache_host, cache_port):
-    """The validation thread, this is where the work is done."""
+    """
+    The validation thread, this is where the work is done.
+    """
     logging.info ("start validator thread")
     # start RPKI validation client process
     cache_cmd = [VALIDATOR_PATH, cache_host, cache_port]
@@ -119,7 +123,9 @@ def validator(in_queue, out_queue, cache_host, cache_port):
     return True
 
 def output(queue, format_json):
-    """Output validation result as one line JSON, pretty JSON formatting is optional"""
+    """
+    Output validation result as one line JSON, pretty JSON formatting is optional
+    """
     logging.info ("start output")
     while True:
         odata = queue.get()
@@ -131,12 +137,15 @@ def output(queue, format_json):
                                  indent=2, separators=(',', ': '))
             else:
                 print json.dumps(odata)
+            sys.stdout.flush()
         except Exception, e:
             logging.exception ("output thread failed with: " + e.message)
     return True
 
 def main():
-    """The main loop, parsing arguments and start input and output threads"""
+    """
+    The main loop, parsing arguments and start input and output threads
+    """
     parser = argparse.ArgumentParser(description='', epilog='')
     parser.add_argument('-l', '--loglevel',
                         help='Set loglevel [DEBUG,INFO,WARNING,ERROR,CRITICAL].',
@@ -177,6 +186,9 @@ def main():
     # main loop, reading from STDIN
     while True:
         line = sys.stdin.readline().strip()
+        if line.strip() == 'STOP':
+            break
+        # end if
         try:
             data = json.loads(line)
         except:
@@ -201,7 +213,10 @@ def main():
                                         data['source'],
                                         data['timestamp'],
                                         data['next_hop']) )
-
+                # end for
+            # end if type
+        # end try
+    # end while
     # we should not get here, but just in case we stop everything gracefully
     input_queue.put("STOP")
     output_queue.put("STOP")

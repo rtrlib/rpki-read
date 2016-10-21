@@ -77,16 +77,22 @@ def main():
     counter = 0
     while True:
         line = sys.stdin.readline().strip()
+        if line.strip() == 'STOP':
+            break
+        # end if
         try:
             data = json.loads(line)
         except:
             logging.exception ("Failed to parse JSON from input.")
         else:
             queue.put(data)
+        # end try
         counter += 1
         if counter > MAX_COUNTER:
             logging.info ("output queue size: " + str(queue.qsize()))
             counter = 0
+        # end if
+    # end while
 
 if __name__ == "__main__":
     main()

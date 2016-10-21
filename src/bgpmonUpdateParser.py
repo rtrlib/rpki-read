@@ -24,7 +24,9 @@ from settings import *
 from BGPmessage import *
 
 def parse_bgp_message(xml):
-    """Returns a dict of a parsed BGP XML update message"""
+    """
+    Returns a dict of a parsed BGP XML update message
+    """
     logging.info("CALL parse_bgp_message")
     try:
         tree = ET.fromstring(xml)
@@ -94,6 +96,9 @@ def parse_bgp_message(xml):
     return bgp_message
 
 def _init_bgpmon_sock(host, port):
+    """
+    Init bgpmon socket connections
+    """
     logging.debug ("CALL _init_bgpmon_sock")
     bm_sock = None
     ready = False
@@ -113,7 +118,9 @@ def _init_bgpmon_sock(host, port):
     return bm_sock
 
 def recv_bgpmon_rib(host, port, queue):
-    """Read the RIB XML stream of bgpmon"""
+    """
+    Receive and parse the BGP RIB XML stream of bgpmon
+    """
     logging.info ("CALL recv_bgpmon_rib (%s:%d)", host, port)
     # open connection
     sock = _init_bgpmon_sock(host,port)
@@ -155,7 +162,9 @@ def recv_bgpmon_rib(host, port, queue):
     return True
 
 def recv_bgpmon_updates(host, port, queue):
-    """Read the BGP update XML stream of bgpmon"""
+    """
+    Receive and parse the BGP update XML stream of bgpmon
+    """
     logging.info ("CALL recv_bgpmon_updates (%s:%d)", host, port)
     # open connection
     sock = _init_bgpmon_sock(host,port)
@@ -182,19 +191,27 @@ def recv_bgpmon_updates(host, port, queue):
     return True
 
 def output(queue):
-    """Output parsed BGP messages as JSON to STDOUT"""
+    """
+    Output parsed BGP messages as JSON to STDOUT
+    """
     logging.info ("CALL output")
-    while True:
+    run = True
+    while run == True:
         odata = queue.get()
         if (odata == 'STOP'):
-            break
-        json_str = json.dumps(odata.__dict__)
-        print json_str
+            print odata
+            run = False
+        else:
+            print json.dumps(odata.__dict__)
+        # end if
         sys.stdout.flush()
+    # end while
     return True
 
 def main():
-    """The main loop"""
+    """
+    The main loop, parsing arguments and start input and output threads
+    """
     parser = argparse.ArgumentParser(description='', epilog='')
     parser.add_argument('-l', '--loglevel',
                         help='Set loglevel [DEBUG,INFO,WARNING,ERROR,CRITICAL].',
