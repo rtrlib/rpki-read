@@ -50,8 +50,9 @@ def output_latest(dbconnstr):
                                         )
             except Exception, e:
                 logging.exception ("MapReduce failed with: " + e.message)
+            else:
+                last_validity_count = db.validity.count()
         # endif
-        last_validity_count = db.validity.count()
         time.sleep(BULK_TIMEOUT)
 
 def output_stat(dbconnstr, interval):
@@ -79,12 +80,19 @@ def output_stat(dbconnstr, interval):
                     stats["num_"+results[i]['_id']] = results[i]['count']
                 ts_tmp = db.validity_latest.find_one(projection={'value.timestamp': True, '_id': False}, sort=[('value.timestamp', -1)])['value']['timestamp']
                 stats['ts'] = int(ts_tmp)
-                if stats['ts'] != 'now':
-                    db.validity_stats.replace_one({'ts': stats['ts']}, stats, True)
             except Exception, e:
-                logging.exception ("QUERY failed with: " + e.message)
-
+                logging.exception ("QUERY on validity_latest failed with: " + e.message)
+            # end try
+        # end if
+        if stats['ts'] != 'now':
+            try:
+                db.validity_stats.replace_one({'ts': stats['ts']}, stats, True)
+            except Exception, e:
+                logging.exception ("INSERT into stats failed with: " + e.message)
+            # end try
+        # end if
         time.sleep(interval)
+    # end while
 
 def output_data(dbconnstr, queue, dropdata):
     """Store validation results into database"""

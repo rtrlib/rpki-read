@@ -58,7 +58,10 @@ def get_ipversion_stats(dbconnstr):
                 b_val = {"Valid": False, "InvalidLength": False, "InvalidAS": False, "NotFound": False}
                 if ip.version == 4:
                     for o in r['origins']:
-                        ipv4_stats["num_"+o['validity']] += 1
+                        if "num_"+o['validity'] in ipv4_stats:
+                            ipv4_stats["num_"+o['validity']] += 1
+                        else:
+                            ipv4_stats["num_"+o['validity']] = 1
                         b_val[o['validity']] = True
                     if b_val['Valid'] == True:
                         ipv4_stats["ips_Valid"] += ip.size
@@ -74,7 +77,10 @@ def get_ipversion_stats(dbconnstr):
                         ipv4_stats["pfx_NotFound"].append(ip.prefixlen)
                 elif ip.version == 6:
                     for o in r['origins']:
-                        ipv6_stats["num_"+o['validity']] += 1
+                        if "num_"+o['validity'] in ipv6_stats:
+                            ipv6_stats["num_"+o['validity']] += 1
+                        else:
+                            ipv6_stats["num_"+o['validity']] = 1
                         b_val[o['validity']] = True
                     if b_val['Valid'] == True:
                         ipv6_stats["ips_Valid"] += ip.size
