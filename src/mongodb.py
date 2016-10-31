@@ -162,9 +162,9 @@ def cleanup_data(dbconnstr):
                 if counter > 0:
                     bulkRemove.execute()
             except Exception, e:
-                logging.exception ("archive_or_purge failed with: " + e.message)
-            else:
-                if counter < 1:
+                logging.exception ("cleanup_data failed with: " + e.message)
+            finally:
+                if counter < 42:
                     break
                 # end if
             # end try
