@@ -65,14 +65,6 @@ def main():
                                 args=(dbconnstr,stats_interval))
     output_stat_p.start()
 
-    # thread4: periodically archive old validation results
-    archive_interval = SERVICE_INTERVAL
-    if archive_interval < 1:
-        archive_interval = 300
-    archive_p = mp.Process( target=archive_or_purge,
-                            args=(dbconnstr, archive_interval, args['purge']))
-    archive_p.start()
-
     # main loop, read data from STDIN to be stored in database
     counter = 0
     while True:

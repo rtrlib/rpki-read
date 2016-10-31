@@ -136,95 +136,24 @@ def output_data(dbconnstr, queue, dropdata):
             finally:
                 bulk = db.validity.initialize_unordered_bulk_op()
                 bulk_len = 0
+                cleanup_data(dbconnstr)
 
-def archive_or_purge(dbconnstr, interval, purge):
-    """Archive or purge old, expired valitdation results in database"""
-    logging.info ("CALL archive_or_purge, with mongodb: " +dbconnstr)
-    # open db connection
-    client = MongoClient(dbconnstr)
-    db = client.get_default_database()
-    archive_old = ""
-    while(True):
-        archive_str = datetime.today().strftime("archive_%Y_w%W")
-        if len(archive_old) < 1:
-            archive_old = archive_str
-        archive_col = db[archive_str]
-        counter = 0
-        # archive old NotFound entries
-        if "validity" in db.collection_names() and db.validity.count() > 0:
-            if not purge:
-                bulkInsert = archive_col.initialize_unordered_bulk_op()
-            bulkRemove = db.validity.initialize_unordered_bulk_op()
-            try:
-                pipeline = [
-                    { "$group": { "_id": '$prefix', "plist": { "$push" : { "pid": "$_id", "timestamp": "$timestamp" } }, "maxts": {"$max" : '$timestamp'} } },
-                    { "$unwind": "$plist" },
-                    { "$project": {"mark": { "$cond": [ { "$lt": [ "$plist.timestamp", "$maxts" ] }, "true", "false" ] }, "_id" : '$plist.pid', 'maxts': '$maxts', 'timestamp': '$plist.timestamp'} },
-                    { "$match": {'mark': "true"} },
-                    { "$limit": BULK_MAX_OPS}
-                ]
-                marked = db.validity.aggregate(pipeline, allowDiskUse=True)
-                for p in marked:
-                    counter += 1
-                    if not purge:
-                        bulkInsert.insert(db.validity.find_one({"_id": p['_id']}))
-                    bulkRemove.find({"_id": p['_id']}).remove_one()
-                if counter > 0:
-                    bulkRemove.execute()
-                    if not purge:
-                        bulkInsert.execute()
-            except Exception, e:
-                logging.exception ("archive_or_purge failed with: " + e.message)
-            # end try
-        # end if validity
-        # if archive_old != archive_str:
-        #     archive_clean(dbconnstr, archive_old)
-        #     archive_old = archive_str
-        if counter < (BULK_MAX_OPS * 0.2):
-            time.sleep(interval)
-    # end while
-
-def archive_clean(dbconnstr, archive_str):
-    logging.info ("CALL archive_clean on "+archive_str+", with mongodb: " +dbconnstr)
-    client = MongoClient(dbconnstr)
-    db = client.get_default_database()
-    if archive_str in db.collection_names() and db[archive_str].count() > 0:
-        archive_col = db[archive_str]
+def cleanup_data(dbconnstr):
+    if "validity" in db.collection_names() and db.validity.count() > 0:
+        bulkRemove = db.validity.initialize_unordered_bulk_op()
         try:
-            prefixes = archive_col.distinct('prefix')
+            pipeline = [
+                { "$group": { "_id": '$prefix', "plist": { "$push" : { "pid": "$_id", "timestamp": "$timestamp" } }, "maxts": {"$max" : '$timestamp'} } },
+                { "$unwind": "$plist" },
+                { "$project": {"mark": { "$cond": [ { "$lt": [ "$plist.timestamp", "$maxts" ] }, "true", "false" ] }, "_id" : '$plist.pid', 'maxts': '$maxts', 'timestamp': '$plist.timestamp'} },
+                { "$match": {'mark': "true"} },
+                { "$limit": BULK_MAX_OPS}
+            ]
+            marked = db.validity.aggregate(pipeline, allowDiskUse=True)
+            for p in marked:
+                counter += 1
+                bulkRemove.find({"_id": p['_id']}).remove_one()
+            if counter > 0:
+                bulkRemove.execute()
         except Exception, e:
-            logging.exception ("archive_clean, distinct failed with: " + e.message)
-        else:
-            for p in prefixes:
-                counter = 0
-                bulkRemove = archive_col.initialize_unordered_bulk_op()
-                try:
-                    states = archive_col.find({"prefix": p}, sort=[('timestamp', ASCENDING)])
-                except Exception, e:
-                    logging.exception ("archive_clean, find failed with: " + e.message)
-                else:
-                    s1 = None
-                    for s2 in states:
-                        if s1 != None:
-                            logging.debug(s1)
-                            logging.debug(s2)
-                            if (s1['type'] != 'withdraw') and (s2['type'] != 'withdraw') and (s1['validated_route']['validity']['state'] == s2['validated_route']['validity']['state']):
-                                counter += 1
-                                logging.debug("remove 1")
-                                bulkRemove.find({'_id': s1['_id']}).remove_one()
-                            #end if
-                        #end if
-                        s1 = s2
-                    # end for
-                #end try
-                if counter > 0:
-                    try:
-                        logging.info("archive bulkRemove for prefix: "+p)
-                        bulkRemove.execute()
-                    except Exception, e:
-                        logging.exception ("archive_clean, bulkRemove failed with: " + e.message)
-                    #end try
-                #end if
-            #end for
-        #end try
-    #end if
+            logging.exception ("archive_or_purge failed with: " + e.message)
