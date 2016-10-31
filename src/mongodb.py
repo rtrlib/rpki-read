@@ -139,6 +139,10 @@ def output_data(dbconnstr, queue, dropdata):
                 cleanup_data(dbconnstr)
 
 def cleanup_data(dbconnstr):
+    """Cleanup data: remove old validation results from database"""
+    logging.debug ("CALL cleanup_data mongodb, with" +dbconnstr)
+    client = MongoClient(dbconnstr)
+    db = client.get_default_database()
     if "validity" in db.collection_names() and db.validity.count() > 0:
         bulkRemove = db.validity.initialize_unordered_bulk_op()
         try:
