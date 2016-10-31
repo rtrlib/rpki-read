@@ -143,21 +143,30 @@ def cleanup_data(dbconnstr):
     logging.debug ("CALL cleanup_data mongodb, with" +dbconnstr)
     client = MongoClient(dbconnstr)
     db = client.get_default_database()
-    if "validity" in db.collection_names() and db.validity.count() > 0:
-        bulkRemove = db.validity.initialize_unordered_bulk_op()
-        try:
-            pipeline = [
-                { "$group": { "_id": '$prefix', "plist": { "$push" : { "pid": "$_id", "timestamp": "$timestamp" } }, "maxts": {"$max" : '$timestamp'} } },
-                { "$unwind": "$plist" },
-                { "$project": {"mark": { "$cond": [ { "$lt": [ "$plist.timestamp", "$maxts" ] }, "true", "false" ] }, "_id" : '$plist.pid', 'maxts': '$maxts', 'timestamp': '$plist.timestamp'} },
-                { "$match": {'mark': "true"} },
-                { "$limit": BULK_MAX_OPS}
-            ]
-            marked = db.validity.aggregate(pipeline, allowDiskUse=True)
-            for p in marked:
-                counter += 1
-                bulkRemove.find({"_id": p['_id']}).remove_one()
-            if counter > 0:
-                bulkRemove.execute()
-        except Exception, e:
-            logging.exception ("archive_or_purge failed with: " + e.message)
+    while True:
+        counter = 0
+        if "validity" in db.collection_names() and db.validity.count() > 0:
+            bulkRemove = db.validity.initialize_unordered_bulk_op()
+            try:
+                pipeline = [
+                    { "$group": { "_id": '$prefix', "plist": { "$push" : { "pid": "$_id", "timestamp": "$timestamp" } }, "maxts": {"$max" : '$timestamp'} } },
+                    { "$unwind": "$plist" },
+                    { "$project": {"mark": { "$cond": [ { "$lt": [ "$plist.timestamp", "$maxts" ] }, "true", "false" ] }, "_id" : '$plist.pid', 'maxts': '$maxts', 'timestamp': '$plist.timestamp'} },
+                    { "$match": {'mark': "true"} },
+                    { "$limit": BULK_MAX_OPS}
+                ]
+                marked = db.validity.aggregate(pipeline, allowDiskUse=True)
+                for p in marked:
+                    counter += 1
+                    bulkRemove.find({"_id": p['_id']}).remove_one()
+                if counter > 0:
+                    bulkRemove.execute()
+            except Exception, e:
+                logging.exception ("archive_or_purge failed with: " + e.message)
+            else:
+                if counter < 1:
+                    break
+                # end if
+            # end try
+        # end if
+    # end while
