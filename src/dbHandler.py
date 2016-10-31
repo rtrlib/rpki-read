@@ -29,9 +29,6 @@ def main():
     parser.add_argument('-m', '--mongodb',
                         help='MongoDB connection parameters.',
                         type=str, default=DEFAULT_MONGO_DATABASE['uri'])
-    parser.add_argument('-p', '--purge',
-                        help='Purge expired validation results (Default: archive).',
-                        action='store_true', default=False)
 
     args = vars(parser.parse_args())
 
