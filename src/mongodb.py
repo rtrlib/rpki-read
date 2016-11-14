@@ -1,4 +1,5 @@
 import logging
+import os
 import time
 
 from bson.son import SON
@@ -6,7 +7,7 @@ from bson.code import Code
 from datetime import datetime, timedelta
 from math import sqrt
 from pymongo import MongoClient, DESCENDING, ASCENDING
-from settings import BULK_TIMEOUT, BULK_MAX_OPS
+from settings import BULK_TIMEOUT, BULK_MAX_OPS, QUEUE_LIMIT, WAIT_TO_SYNC_FILE
 
 logging.basicConfig(level=logging.CRITICAL, format='%(asctime)s : %(levelname)s : %(message)s')
 
@@ -96,7 +97,7 @@ def output_stat(dbconnstr, interval):
 
 def output_data(dbconnstr, queue, dropdata):
     """Store validation results into database"""
-    logging.debug ("CALL output_data mongodb, with" +dbconnstr)
+    logging.debug ("CALL output_data mongodb, with " +dbconnstr)
     client = MongoClient(dbconnstr)
     db = client.get_default_database()
     if dropdata:
@@ -108,6 +109,19 @@ def output_data(dbconnstr, queue, dropdata):
     bulk_len = 0
     begin = datetime.now()
     while True:
+        if (queue.qsize() > QUEUE_LIMIT) and not os.path.exists(WAIT_TO_SYNC_FILE):
+            try:
+                logging.info("create wait_to_sync file")
+                with open(WAIT_TO_SYNC_FILE, 'a'):
+                    os.utime(WAIT_TO_SYNC_FILE, None)
+            except Exception, e:
+                logging.exception ("create wait_to_sync file, failed with: %s" , e.message)
+        elif (queue.qsize() < (QUEUE_LIMIT * 0.5)) and os.path.exists(WAIT_TO_SYNC_FILE):
+            try:
+                logging.info("remove wait_to_sync file")
+                os.remove(WAIT_TO_SYNC_FILE)
+            except Exception, e:
+                logging.exception ("remove wait_to_sync file, failed with: %s" , e.message)
         data = queue.get()
         if (data == 'DONE'):
             break
@@ -127,20 +141,21 @@ def output_data(dbconnstr, queue, dropdata):
         timeout = now - begin
         # exec bulk validity
         if (bulk_len > BULK_MAX_OPS) or (timeout.total_seconds() > BULK_TIMEOUT):
-            begin = datetime.now()
             logging.info ("do mongo bulk operation ...")
+            # end try create file
             try:
                 bulk.execute({'w': 0})
             except Exception, e:
                 logging.exception ("bulk operation, failed with: %s" , e.message)
-            finally:
-                bulk = db.validity.initialize_unordered_bulk_op()
-                bulk_len = 0
-                cleanup_data(dbconnstr)
+            # end try bulk
+            bulk = db.validity.initialize_unordered_bulk_op()
+            bulk_len = 0
+            cleanup_data(dbconnstr)
+            begin = datetime.now()
 
 def cleanup_data(dbconnstr):
     """Cleanup data: remove old validation results from database"""
-    logging.debug ("CALL cleanup_data mongodb, with" +dbconnstr)
+    logging.debug ("CALL cleanup_data mongodb, with " +dbconnstr)
     client = MongoClient(dbconnstr)
     db = client.get_default_database()
     while True:

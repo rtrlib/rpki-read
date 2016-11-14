@@ -41,6 +41,10 @@ def output(odata):
     # end if
     sys.stdout.flush()
 
+def wait_to_sync():
+    while(os.path.exists(WAIT_TO_SYNC_FILE)):
+        time.sleep(1)
+
 def recv_bgpstream_rib(begin, until, collector):
     """
     Receive and parse BGP RIB records from a given bgpstream collector.
@@ -57,6 +61,7 @@ def recv_bgpstream_rib(begin, until, collector):
     # Start the stream
     stream.start()
     while (stream.get_next_record(rec)):
+        wait_to_sync()
         if rec.status == 'valid':
             elem = rec.get_next_elem()
         else:
@@ -99,6 +104,7 @@ def recv_bgpstream_updates(begin, until, collector):
     # Start the stream
     stream.start()
     while (stream.get_next_record(rec)):
+        wait_to_sync()
         if rec.status == 'valid':
             elem = rec.get_next_elem()
         else:
