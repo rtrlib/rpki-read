@@ -1,3 +1,4 @@
+import gc
 import logging
 import os
 import time
@@ -151,6 +152,7 @@ def output_data(dbconnstr, queue, dropdata):
             bulk = db.validity.initialize_unordered_bulk_op()
             bulk_len = 0
             cleanup_data(dbconnstr)
+            gc.collect()
             begin = datetime.now()
 
 def cleanup_data(dbconnstr):

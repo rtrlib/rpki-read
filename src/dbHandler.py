@@ -1,6 +1,7 @@
 #!/usr/bin/python
 import argparse
 import calendar
+import gc
 import json
 import logging
 import os
@@ -88,19 +89,7 @@ def main():
         if counter > MAX_COUNTER:
             logging.info ("output queue size: " + str(queue.qsize()))
             counter = 0
-        if (queue.qsize() > QUEUE_LIMIT) and not os.path.exists(WAIT_TO_SYNC_FILE):
-            try:
-                logging.info("create wait_to_sync file")
-                with open(WAIT_TO_SYNC_FILE, 'a'):
-                    os.utime(WAIT_TO_SYNC_FILE, None)
-            except Exception, e:
-                logging.exception ("create wait_to_sync file, failed with: %s" , e.message)
-        elif (queue.qsize() < (QUEUE_LIMIT * 0.8)) and os.path.exists(WAIT_TO_SYNC_FILE):
-            try:
-                logging.info("remove wait_to_sync file")
-                os.remove(WAIT_TO_SYNC_FILE)
-            except Exception, e:
-                logging.exception ("remove wait_to_sync file, failed with: %s" , e.message)
+            gc.collect()
         # end if
     # end while
 

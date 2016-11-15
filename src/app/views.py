@@ -1,4 +1,5 @@
 import codecs
+import gc
 import json
 import logging
 import markdown
@@ -16,8 +17,6 @@ else:
     logging.critical("unknown database type!")
     sys.exit(1)
 
-logging.basicConfig(level=logging.CRITICAL, format='%(asctime)s : %(levelname)s : %(message)s')
-
 g_dash_stats = dict()
 g_ipv4_stats = dict()
 g_ipv6_stats = dict()
@@ -25,13 +24,11 @@ g_last24h_stats = list()
 g_stats_counter = config.UPDATE_INTERVAL_FACTOR
 
 def update_dash_stats():
-    print "update_dash_stats, start"
     global g_dash_stats
     try:
         dash_stats = get_dash_stats(config.DATABASE_CONN)
         if dash_stats != None:
-            print "update_dash_stats, success"
-            dash_stats['source'] = config.BGPMON_SOURCE
+            dash_stats['source'] = config.BGP_SOURCE
             dash_stats['rel_Valid'] = round( (float(dash_stats['num_Valid'])/float(dash_stats['num_Total']))*100 , 2)
             dash_stats['rel_InvalidLength'] = round( (float(dash_stats['num_InvalidLength'])/float(dash_stats['num_Total']))*100 , 2)
             dash_stats['rel_InvalidAS'] = round( (float(dash_stats['num_InvalidAS'])/float(dash_stats['num_Total']))*100 , 2)
@@ -42,27 +39,23 @@ def update_dash_stats():
         print "update_dash_stats, error: " + e.message
 
 def update_last24h_stats():
-    print "update_last24h_stats, start"
     global g_last24h_stats
     try:
         last24h_stats = get_last24h_stats(config.DATABASE_CONN)
         if last24h_stats != None:
-            print "update_last24h_stats, success"
             g_last24h_stats = last24h_stats
     except Exception, e:
         logging.exception ("update_last24h_stats, error: " + e.message)
         print "update_last24h_stats, error: " + e.message
+    gc.collect()
 
 def update_ipversion_stats():
-    print "update_ipversion_stats, start"
     global g_ipv4_stats, g_ipv6_stats
     try:
         ipv4_stats, ipv6_stats = get_ipversion_stats(config.DATABASE_CONN)
         if ipv4_stats != None:
-            print "update_ipversion_stats, success ipv4"
             g_ipv4_stats = ipv4_stats
         if ipv6_stats != None:
-            print "update_ipversion_stats, success ipv6"
             g_ipv6_stats = ipv6_stats
     except Exception, e:
         logging.exception ("update_ipversion_stats, error: " + e.message)

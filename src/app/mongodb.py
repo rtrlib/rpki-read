@@ -6,10 +6,7 @@ import time
 from pymongo import MongoClient, DESCENDING, ASCENDING
 from netaddr import *
 
-logging.basicConfig(level=logging.CRITICAL, format='%(asctime)s : %(levelname)s : %(message)s')
-
 def get_ipversion_stats(dbconnstr):
-    print "get_ipversion_stats"
     client = MongoClient(dbconnstr)
     db = client.get_default_database()
     types = ['num_', 'ips_']
