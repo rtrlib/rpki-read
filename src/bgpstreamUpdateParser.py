@@ -1,7 +1,6 @@
 #!/usr/bin/python
 
 import argparse
-import calendar
 import json
 import logging
 import os
@@ -14,7 +13,6 @@ import time
 
 from datetime import datetime, date, timedelta
 from _pybgpstream import BGPStream, BGPRecord, BGPElem
-from tzlocal import get_localzone
 
 from settings import *
 from BGPmessage import *
@@ -143,7 +141,7 @@ def main():
     parser = argparse.ArgumentParser(description='', epilog='')
     parser.add_argument('-b', '--begin',
                         help='Begin date (inclusive), format: yyyy-mm-dd HH:MM',
-                        type=valid_date, required=False)
+                        type=valid_date, default=datetime.now())
     parser.add_argument('-u', '--until',
                         help='Until date (exclusive), format: yyyy-mm-dd HH:MM',
                         type=valid_date, required=False)
@@ -162,22 +160,17 @@ def main():
                         format='%(asctime)s : %(levelname)s : %(message)s')
 
     # parse and init timestamps
-    tz = get_localzone()
-    dt_epoch = datetime(1970, 1, 1)
-    dt_begin = datetime.utcnow()
-    if args['begin']:
-        dt_begin = tz.localize(args['begin'])
-    ts_begin = int((dt_begin - dt_epoch).total_seconds())
+    dt_begin = args['begin']
+    ts_begin = int(time.mktime(dt_begin.timetuple()))
     ts_until = 0
     if args['until']:
-        dt_until = tz.localize(args['until'])
-        ts_until = int((dt_until - dt_epoch).total_seconds())
-
+        dt_until = args['until']
+        ts_until = int(time.mktime(dt_until.timetuple()))
     # start
     logging.info("START ("+str(ts_begin)+" - "+str(ts_until)+")")
     try:
         # receive last full RIB first
-        recv_bgpstream_rib( (ts_begin - (2*RIB_TS_INTERVAL)), ts_begin, args['collector'])
+        recv_bgpstream_rib( (ts_begin - RIB_TS_INTERVAL), ts_begin, args['collector'])
         # receive updates
         recv_bgpstream_updates(ts_begin, ts_until, args['collector'])
     except KeyboardInterrupt:
