@@ -1,11 +1,11 @@
 #!/usr/bin/python
 
 class BGPmessage:
-    def __init__(self,ts,type):
+    def __init__(self, ts, msgtype):
         self.next_hop = None
         self.source = None
         self.timestamp = ts
-        self.type = type
+        self.type = msgtype
         self.aspath = []
         self.announce = []
         self.withdraw = []

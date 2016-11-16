@@ -168,6 +168,14 @@ def main():
         ts_until = int(time.mktime(dt_until.timetuple()))
     # start
     logging.info("START ("+str(ts_begin)+" - "+str(ts_until)+")")
+    if os.path.exists(WAIT_TO_SYNC_FILE):
+        try:
+            logging.info("remove wait_to_sync file")
+            os.remove(WAIT_TO_SYNC_FILE)
+        except Exception, e:
+            logging.exception ("remove wait_to_sync file, failed with: %s" , e.message)
+        # end try
+    # end if
     try:
         # receive last full RIB first
         recv_bgpstream_rib( (ts_begin - RIB_TS_INTERVAL), ts_begin, args['collector'])
