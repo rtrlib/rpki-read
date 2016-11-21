@@ -14,7 +14,7 @@ Resulting validation states are:
 
 The RPKI READ monitoring system has two parts: the backend storing latest
 validation results in a database, and the (web) frontend displaying these
-results as well as an overview on statistics derived from them.
+results as well as an overview of statistics derived from them.
 The backend connects to a live XML stream of a known BGPmon instance, parses
 BGP update messages to extract IP prefixes and origin AS information. Prefix
 origins are validated using the RTRlib client to query a RPKI cache server.

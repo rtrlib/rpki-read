@@ -140,7 +140,7 @@
             <div class="col-xs-12">
                 <div class="panel panel-default">
                     <div class="panel-heading">
-                        <h1>RPKI READ statistics</h1>
+                        <h1>RPKI READ Statistics</h1>
                         <h4>
                             <span class="pull-left">Timestamp: <span class="label label-primary">{{ stats.latest_dt }}</span></span>
                             <span class="pull-right">BGP Source: <span class="label label-primary">{{ stats.source }}</span></span>
@@ -151,7 +151,7 @@
                         <p class="text-primary lead">
                             This page provides a variety of statistics on the latest RPKI origin AS validation results.
                             Some of the graphs shown below may include historical (e.g. last 24h) or data from third parties such as the RIRs.
-                            The statistics cover all IP prefix advertised by the given BGP source and up to a certain timestamp, as shown above.
+                            The statistics cover all IP prefixes advertised by the given BGP source and up to a certain timestamp, as shown above.
                         </p>
                     </div>
                 </div>
@@ -162,7 +162,7 @@
                 <div class="panel panel-default">
                     <div class="panel-heading">
                         <h2>
-                            RPKI validation results over last 24h
+                            RPKI Validation Results over the last 24 hours
                             <button type="button" class="btn btn-info pull-right" data-toggle="collapse" data-target="#info_last24h">
                                 <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
                             </button>
@@ -172,8 +172,8 @@
                         <div class="row">
                             <div id="info_last24h" class="col-xs-12 alert alert-info collapse" role="alert">
                                 <p class="text-justify">
-                                    The graphs below show the RPKI validation results for all prefix origins observed during the last 24h.
-                                    A verifiable prefix origin has at least one Route Origin Authorization (ROA) for that prefix in the RPKI.
+                                    The graphs below show the RPKI validation results for all prefixes observed during the last 24h.
+                                    A verifiable prefix has at least one Route Origin Authorization (ROA) for that prefix and its origin AS in the RPKI.
                                     <i>Note</i> that the number of prefix to origin AS relations is likely higher than the number of distinct IP prefixes advertised in the BGP.
                                     Because, a certain IP prefix might be announced by multiple ASes, thus it has several origins.
                                 </p>
@@ -181,11 +181,11 @@
                         </div>
                         <div class="row">
                             <div class="col-md-6 col-xs-12">
-                                <h4>Advertised prefix origins</h4>
+                                <h4>Advertised Prefixes</h4>
                                 <div id="lChartAll24h" style="height: 280px"></div>
                             </div> <!-- div panel body col left -->
                             <div class="col-md-6 col-xs-12">
-                                <h4>RPKI verifiable origins</h4>
+                                <h4>Advertised Prefixes with ROA</h4>
                                 <div id="lChartROA24h" style="height: 280px"></div>
                             </div> <!-- div panel body col right -->
                         </div> <!-- div row-eq-height -->
@@ -199,7 +199,7 @@
                 <div class="panel panel-default">
                     <div class="panel-heading">
                         <h2>
-                            RPKI validation results for IPv4
+                            RPKI Validation Results for IPv4
                             <button type="button" class="btn btn-info pull-right" data-toggle="collapse" data-target="#info_ipv4">
                                 <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
                             </button>
@@ -209,8 +209,8 @@
                         <div class="row">
                             <div id="info_ipv4" class="col-xs-12 alert alert-info collapse" role="alert">
                                 <p class="text-justify">
-                                    The graphs below show the RPKI validation states for all currently advertised IPv4 prefixes.
-                                    They show relative validity over number of prefix origins and how much of the advertised IPv4 address space is covered by the RPKI.
+                                    The graphs below show the RPKI validation results for all currently advertised IPv4 prefixes.
+                                    They show relative validition states over number of advertised prefixes and how much of the advertised IPv4 address space is covered by the RPKI.
                                     <i>Note</i> that a distinct IP prefix can have multiple origin AS, and is thus counted several times.
                                     However, for address space coverage each prefix is counted only once, with preference on validation results in the following order: <i>Valid</i>, <i>Invalid Length</i>, <i>Invalid AS</i>, <i>Not Found</i>.
                                 </p>
@@ -218,11 +218,11 @@
                         </div>
                         <div class="row">
                             <div class="col-md-6 col-xs-12">
-                                <h4>Number of advertised prefix origins</h4>
+                                <h4>Number of Advertised Prefixes</h4>
                                 <div id="pc_ipv4_origins" style="height: 280px"></div>
                             </div> <!-- div panel body col left -->
                             <div class="col-md-6 col-xs-12">
-                                <h4>Coverage of advertised address space</h4>
+                                <h4>Coverage of Advertised Address Space</h4>
                                 <div id="pc_ipv4_coverage" style="height: 280px"></div>
                             </div> <!-- div panel body col right -->
                         </div> <!-- div row-eq-height -->
@@ -237,7 +237,7 @@
                 <div class="panel panel-default">
                     <div class="panel-heading">
                         <h2>
-                            RPKI validation results for IPv6
+                            RPKI Validation Results for IPv6
                             <button type="button" class="btn btn-info pull-right" data-toggle="collapse" data-target="#info_ipv4">
                                 <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
                             </button>
@@ -247,20 +247,20 @@
                         <div class="row">
                             <div id="info_ipv4" class="col-xs-12 alert alert-info collapse" role="alert">
                                 <p class="text-justify">
-                                    The graphs below show the RPKI validation states for all currently advertised IPv6 prefixes.
-                                    They show relative validity over number of prefix origins and how much of the advertised IPv6 address space is covered by the RPKI.
+                                    The graphs below show the RPKI validation results for all currently advertised IPv6 prefixes.
+                                    They show relative validition states over number of prefixes and how much of the advertised IPv6 address space is covered by the RPKI.
                                     <i>Note</i> that a distinct IP prefix can have multiple origins, and is counted several times.
-                                    However, for address space coverage each prefix is counted only once, with respect to its validity (valid, invalid length, invalid AS, not found).
+                                    However, for address space coverage each prefix is counted only once, with preference on validation results in the following order: <i>Valid</i>, <i>Invalid Length</i>, <i>Invalid AS</i>, <i>Not Found</i>.
                                 </p>
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6 col-xs-12">
-                                <h4>Number of advertised prefix origins</h4>
+                                <h4>Number of Advertised Prefixes</h4>
                                 <div id="pc_ipv6_origins" style="height: 280px"></div>
                             </div> <!-- div panel body col left -->
                             <div class="col-md-6 col-xs-12">
-                                <h4>Coverage of advertised address space</h4>
+                                <h4>Coverage of Advertised Address Space</h4>
                                 <div id="pc_ipv6_coverage" style="height: 280px"></div>
                             </div> <!-- div panel body col right -->
                         </div> <!-- div row-eq-height -->
