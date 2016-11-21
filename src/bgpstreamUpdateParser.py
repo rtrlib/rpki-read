@@ -10,7 +10,7 @@ import time
 from datetime import datetime
 from _pybgpstream import BGPStream, BGPRecord, BGPElem
 
-from settings import MAX_COUNTER, DEFAULT_BGPSTREAM_COLLECTOR, DEFAULT_LOG_LEVEL, RIB_TS_INTERVAL, RIB_TS_WAIT
+from settings import MAX_COUNTER, DEFAULT_BGPSTREAM_COLLECTOR, DEFAULT_LOG_LEVEL, RIB_TS_INTERVAL, RIB_TS_WAIT, WAIT_TO_SYNC
 from BGPmessage import BGPmessage
 output_counter = 0
 # helper functions
@@ -40,7 +40,7 @@ def output(odata):
     if output_counter > MAX_COUNTER:
         output_counter = 0
         sys.stdout.flush()
-        time.sleep(1)
+        time.sleep(WAIT_TO_SYNC)
 
 def recv_bgpstream_rib(begin, until, collector):
     """

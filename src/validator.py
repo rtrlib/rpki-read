@@ -1,16 +1,12 @@
 #!/usr/bin/python
+from __future__ import print_function
+
 import argparse
-import calendar
 import json
 import logging
-import os
-import re
-import socket
-import string
 import sys
 
 import multiprocessing as mp
-from datetime import datetime
 from subprocess import PIPE, Popen
 
 # internal imports
@@ -89,7 +85,7 @@ def validator(in_queue, out_queue, cache_host, cache_port):
     # start RPKI validation client process
     cache_cmd = [VALIDATOR_PATH, cache_host, cache_port]
     validator_process = Popen(cache_cmd, stdin=PIPE, stdout=PIPE)
-    logging.info ("run validator thread (%s:%s)" % (cache_host, cache_port))
+    logging.info("run validator thread (" + cache_host + ":" + cache_port + ")")
     run = True
     while run:
         validation_entry = in_queue.get(True)
@@ -103,21 +99,20 @@ def validator(in_queue, out_queue, cache_host, cache_port):
             validator_process = Popen(cache_cmd, stdin=PIPE, stdout=PIPE)
         validator_process.stdin.write(bgp_entry_str + '\n')
         validation_result = validator_process.stdout.readline().strip()
-        validity =  _get_validity(validation_result)
-        logging.debug (cache_host+":" +cache_port+ " -> " +validation_entry[0]+
-                    "(AS"+asn+") -> " +validity['state'])
+        validity = _get_validity(validation_result)
+        logging.debug(cache_host+":" +cache_port+ " -> " +validation_entry[0]+
+                      "(AS"+asn+") -> " +validity['state'])
         return_data = dict()
         return_data['route'] = dict()
         return_data['route']['origin_asn'] = "AS"+asn
         return_data['route']['prefix'] = validation_entry[0]
         return_data['validity'] = validity
-        out_queue.put({ "type":"announcement",
-                        "prefix":validation_entry[0],
-                        "source":validation_entry[2], # source
-                        "timestamp":validation_entry[3], # timestamp
-                        "next_hop":validation_entry[4], # next_hop
-                        "validated_route":return_data
-                        })
+        out_queue.put({"type":"announcement",
+                       "prefix": validation_entry[0],
+                       "source": validation_entry[2],       # source
+                       "timestamp": validation_entry[3],    # timestamp
+                       "next_hop": validation_entry[4],     # next_hop
+                       "validated_route": return_data})
     # end while
     validator_process.kill()
     return True
@@ -133,13 +128,13 @@ def output(queue, format_json):
             break
         try:
             if format_json:
-                print json.dumps(odata, sort_keys=True,
-                                 indent=2, separators=(',', ': '))
+                print(json.dumps(odata, sort_keys=True,
+                                 indent=2, separators=(',', ': ')))
             else:
-                print json.dumps(odata)
+                print(json.dumps(odata))
             sys.stdout.flush()
-        except Exception, e:
-            logging.exception ("output thread failed with: " + e.message)
+        except Exception as errmsg:
+            logging.exception ("output thread failed with: " + str(errmsg))
     return True
 
 def main():
@@ -163,7 +158,7 @@ def main():
 
     numeric_level = getattr(logging, args['loglevel'].upper(), None)
     if not isinstance(numeric_level, int):
-        raise ValueError('Invalid log level: %s' % loglevel)
+        raise ValueError('Invalid log level: ' + args['loglevel'])
     logging.basicConfig(level=numeric_level,
                         format='%(asctime)s : %(levelname)s : %(message)s')
 
@@ -192,27 +187,22 @@ def main():
         try:
             data = json.loads(line)
         except:
-            logging.exception ("Failed to parse JSON from input.")
+            logging.exception("Failed to parse JSON from input.")
         else:
             if data['type'] == 'update':
                 withdraws = data['withdraw']
                 for w in withdraws:
-                    output_queue.put({  "type":"withdraw",
-                                        "prefix":w,
-                                        "source":data['source'],
-                                        "timestamp":data['timestamp']
-                                      })
+                    output_queue.put({"type":"withdraw", "prefix":w,
+                                      "source":data['source'],
+                                      "timestamp":data['timestamp']})
                 path = data['aspath']
                 if len(path) < 1:
                     continue
                 origin = path[-1]
                 prefixes = data['announce']
                 for p in prefixes:
-                    logging.debug (p+" : "+origin)
-                    input_queue.put( (  p, origin,
-                                        data['source'],
-                                        data['timestamp'],
-                                        data['next_hop']) )
+                    logging.debug(p + " : " + origin)
+                    input_queue.put((p, origin, data['source'], data['timestamp'], data['next_hop']))
                 # end for
             # end if type
         # end try
