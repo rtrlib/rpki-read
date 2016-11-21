@@ -35,7 +35,7 @@ def main():
 
     numeric_level = getattr(logging, args['loglevel'].upper(), None)
     if not isinstance(numeric_level, int):
-        raise ValueError('Invalid log level: %s' % loglevel)
+        raise ValueError('Invalid log level: %s' % args['loglevel'])
     logging.basicConfig(level=numeric_level,
                         format='%(asctime)s : %(levelname)s : %(message)s')
 
@@ -46,8 +46,8 @@ def main():
     dbconnstr = args['mongodb'].strip()
 
     # thread1: write data to database
-    output_data_p = mp.Process( target=output_data,
-                                args=(dbconnstr,queue,args['dropdata']))
+    output_data_p = mp.Process(target=output_data,
+                               args=(dbconnstr, queue,args['dropdata']))
     output_data_p.start()
 
     # thread2: filter latest validation results
@@ -59,8 +59,8 @@ def main():
     stats_interval = DOSTATS_INTERVAL
     if stats_interval < 1:
         stats_interval = 60
-    output_stat_p = mp.Process( target=output_stat,
-                                args=(dbconnstr,stats_interval))
+    output_stat_p = mp.Process(target=output_stat,
+                               args=(dbconnstr, stats_interval))
     output_stat_p.start()
 
     # main loop, read data from STDIN to be stored in database
@@ -69,8 +69,8 @@ def main():
         try:
             logging.info("remove wait_to_sync file")
             os.remove(WAIT_TO_SYNC_FILE)
-        except Exception, e:
-            logging.exception ("remove wait_to_sync file, failed with: %s" , e.message)
+        except Exception as errmsg:
+            logging.exception("remove wait_to_sync file, failed with: " + str(errmsg))
         # end try
     # end if
     while True:
@@ -81,13 +81,13 @@ def main():
         try:
             data = json.loads(line)
         except:
-            logging.exception ("Failed to parse JSON from input.")
+            logging.exception("Failed to parse JSON from input.")
         else:
             queue.put(data)
         # end try
         counter += 1
         if counter > MAX_COUNTER:
-            logging.info ("output queue size: " + str(queue.qsize()))
+            logging.info("output queue size: " + str(queue.qsize()))
             counter = 0
             gc.collect()
         # end if

@@ -6,7 +6,6 @@ import time
 from bson.son import SON
 from bson.code import Code
 from datetime import datetime, timedelta
-from math import sqrt
 from pymongo import MongoClient, DESCENDING, ASCENDING
 from settings import BULK_TIMEOUT, BULK_MAX_OPS, QUEUE_LIMIT, WAIT_TO_SYNC_FILE
 
@@ -14,44 +13,43 @@ logging.basicConfig(level=logging.CRITICAL, format='%(asctime)s : %(levelname)s 
 
 def output_latest(dbconnstr):
     """Generate and store latest validation results in database"""
-    logging.info ("CALL output_latest, with mongodb: " +dbconnstr)
+    logging.info("CALL output_latest, with mongodb: " +dbconnstr)
     # open db connection
     client = MongoClient(dbconnstr)
     db = client.get_default_database()
     f_map = Code("function() {"
-                "  var key = this.prefix;"
-                "  var value = {timestamp: this.timestamp, type: this.type, validated_route: null};"
-                "  if (this.type == 'announcement') {"
-                "    value['validated_route'] = this.validated_route;"
-                "  }"
-                "  emit (key, value);"
-                "}")
+                 "  var key = this.prefix;"
+                 "  var value = {timestamp: this.timestamp, type: this.type, validated_route: null};"
+                 "  if (this.type == 'announcement') {"
+                 "    value['validated_route'] = this.validated_route;"
+                 "  }"
+                 "  emit (key, value);"
+                 "}")
     f_reduce = Code("function (key, values) {"
-                "  var robj = { timestamp: 0, type: null, validated_route: null};"
-                "  values.forEach(function(value) {"
-                "    if ((value != null) && (value.timestamp > robj.timestamp)) {"
-                "      robj.timestamp = value.timestamp;"
-                "      robj.type = value.type;"
-                "      if (value.type == 'announcement') {"
-                "        robj.validated_route = value.validated_route;"
-                "      }"
-                "      else {"
-                "        robj.validated_route = null;"
-                "      }"
-                "    }"
-                "  } );"
-                "  return robj;"
-                "}")
+                    "  var robj = { timestamp: 0, type: null, validated_route: null};"
+                    "  values.forEach(function(value) {"
+                    "    if ((value != null) && (value.timestamp > robj.timestamp)) {"
+                    "      robj.timestamp = value.timestamp;"
+                    "      robj.type = value.type;"
+                    "      if (value.type == 'announcement') {"
+                    "        robj.validated_route = value.validated_route;"
+                    "      }"
+                    "      else {"
+                    "        robj.validated_route = null;"
+                    "      }"
+                    "    }"
+                    "  } );"
+                    "  return robj;"
+                    "}")
     last_validity_count = 0
     while True:
         if "validity" in db.collection_names() and db.validity.count() != last_validity_count:
             try:
-                db.validity.map_reduce( f_map,
-                                        f_reduce,
-                                        out=SON([("replace","validity_latest")]),
-                                        )
-            except Exception, e:
-                logging.exception ("MapReduce failed with: " + e.message)
+                db.validity.map_reduce(f_map,
+                                       f_reduce,
+                                       out=SON([("replace", "validity_latest")]))
+            except Exception as errmsg:
+                logging.exception("MapReduce failed with: " + str(errmsg))
             else:
                 last_validity_count = db.validity.count()
         # endif
@@ -59,7 +57,7 @@ def output_latest(dbconnstr):
 
 def output_stat(dbconnstr, interval):
     """Generate and store validation statistics in database"""
-    logging.info ("CALL output_stat, with mongodb: " +dbconnstr)
+    logging.info("CALL output_stat, with mongodb: " +dbconnstr)
     # open db connection
     client = MongoClient(dbconnstr)
     db = client.get_default_database()
@@ -74,23 +72,24 @@ def output_stat(dbconnstr, interval):
         if "validity_latest" in db.collection_names() and db.validity_latest.count() > 0:
             try:
                 pipeline = [
-                    { "$match": { 'value.type': 'announcement'} },
-                    { "$group": { "_id": "$value.validated_route.validity.state", "count": { "$sum": 1} } }
+                    {"$match": {'value.type': 'announcement'}},
+                    {"$group": {"_id": "$value.validated_route.validity.state",
+                                "count": {"$sum": 1}}}
                 ]
-                results = list(db.validity_latest.aggregate(pipeline, allowDiskUse=True ))
-                for i in range(0,len(results)):
+                results = list(db.validity_latest.aggregate(pipeline, allowDiskUse=True))
+                for i in range(0, len(results)):
                     stats["num_"+results[i]['_id']] = results[i]['count']
                 ts_tmp = db.validity_latest.find_one(projection={'value.timestamp': True, '_id': False}, sort=[('value.timestamp', -1)])['value']['timestamp']
                 stats['ts'] = int(ts_tmp)
-            except Exception, e:
-                logging.exception ("QUERY on validity_latest failed with: " + e.message)
+            except Exception as errmsg:
+                logging.exception("QUERY on validity_latest failed with: " + str(errmsg))
             # end try
         # end if
         if stats['ts'] != 'now':
             try:
                 db.validity_stats.replace_one({'ts': stats['ts']}, stats, True)
-            except Exception, e:
-                logging.exception ("INSERT into stats failed with: " + e.message)
+            except Exception as errmsg:
+                logging.exception("INSERT into stats failed with: " + str(errmsg))
             # end try
         # end if
         time.sleep(interval)
@@ -98,7 +97,7 @@ def output_stat(dbconnstr, interval):
 
 def output_data(dbconnstr, queue, dropdata):
     """Store validation results into database"""
-    logging.debug ("CALL output_data mongodb, with " +dbconnstr)
+    logging.debug("CALL output_data mongodb, with " + dbconnstr)
     client = MongoClient(dbconnstr)
     db = client.get_default_database()
     if dropdata:
@@ -115,39 +114,39 @@ def output_data(dbconnstr, queue, dropdata):
                 logging.info("create wait_to_sync file")
                 with open(WAIT_TO_SYNC_FILE, 'a'):
                     os.utime(WAIT_TO_SYNC_FILE, None)
-            except Exception, e:
-                logging.exception ("create wait_to_sync file, failed with: %s" , e.message)
+            except Exception as errmsg:
+                logging.exception("create wait_to_sync file, failed with: " + str(errmsg))
         elif (queue.qsize() < (QUEUE_LIMIT * 0.5)) and os.path.exists(WAIT_TO_SYNC_FILE):
             try:
                 logging.info("remove wait_to_sync file")
                 os.remove(WAIT_TO_SYNC_FILE)
-            except Exception, e:
-                logging.exception ("remove wait_to_sync file, failed with: %s" , e.message)
+            except Exception as errmsg:
+                logging.exception("remove wait_to_sync file, failed with: " + str(errmsg))
         data = queue.get()
-        if (data == 'DONE'):
+        if data == 'DONE':
             break
         if (data['type'] == 'announcement') or (data['type'] == 'withdraw'):
-            logging.debug ("process announcement or withdraw of prefix: " + data['prefix'])
+            logging.debug("process announcement or withdraw of prefix: " + data['prefix'])
             try:
                 bulk.insert(data)
-            except Exception, e:
-                logging.exception ("bulk insert, failed with: %s ", e.message)
+            except Exception as errmsg:
+                logging.exception("bulk insert, failed with: " + str(errmsg))
             else:
                 bulk_len += 1
         else:
-            logging.warning ("Type not supported, must be either announcement or withdraw!")
+            logging.warning("Type not supported, must be either announcement or withdraw!")
             continue
 
         now = datetime.now()
         timeout = now - begin
         # exec bulk validity
         if (bulk_len > BULK_MAX_OPS) or (timeout.total_seconds() > BULK_TIMEOUT):
-            logging.info ("do mongo bulk operation ...")
+            logging.info("do mongo bulk operation ...")
             # end try create file
             try:
                 bulk.execute({'w': 0})
-            except Exception, e:
-                logging.exception ("bulk operation, failed with: %s" , e.message)
+            except Exception as errmsg:
+                logging.exception("bulk operation, failed with: " + str(errmsg))
             # end try bulk
             bulk = db.validity.initialize_unordered_bulk_op()
             bulk_len = 0
@@ -157,7 +156,7 @@ def output_data(dbconnstr, queue, dropdata):
 
 def cleanup_data(dbconnstr):
     """Cleanup data: remove old validation results from database"""
-    logging.debug ("CALL cleanup_data mongodb, with " +dbconnstr)
+    logging.debug("CALL cleanup_data mongodb, with " +dbconnstr)
     client = MongoClient(dbconnstr)
     db = client.get_default_database()
     while True:
@@ -166,11 +165,14 @@ def cleanup_data(dbconnstr):
             bulkRemove = db.validity.initialize_unordered_bulk_op()
             try:
                 pipeline = [
-                    { "$group": { "_id": '$prefix', "plist": { "$push" : { "pid": "$_id", "timestamp": "$timestamp" } }, "maxts": {"$max" : '$timestamp'} } },
-                    { "$unwind": "$plist" },
-                    { "$project": {"mark": { "$cond": [ { "$lt": [ "$plist.timestamp", "$maxts" ] }, "true", "false" ] }, "_id" : '$plist.pid', 'maxts': '$maxts', 'timestamp': '$plist.timestamp'} },
-                    { "$match": {'mark': "true"} },
-                    { "$limit": BULK_MAX_OPS}
+                    {"$group": {"_id": '$prefix',
+                                "plist": {"$push" : {"pid": "$_id", "timestamp": "$timestamp"}},
+                                "maxts": {"$max" : '$timestamp'}}},
+                    {"$unwind": "$plist"},
+                    {"$project": {"mark": {"$cond": [{"$lt": ["$plist.timestamp", "$maxts"]}, "true", "false"]},
+                                  "_id": '$plist.pid', 'maxts': '$maxts', 'timestamp': '$plist.timestamp'}},
+                    {"$match": {'mark': "true"}},
+                    {"$limit": BULK_MAX_OPS}
                 ]
                 marked = db.validity.aggregate(pipeline, allowDiskUse=True)
                 for p in marked:
@@ -178,8 +180,8 @@ def cleanup_data(dbconnstr):
                     bulkRemove.find({"_id": p['_id']}).remove_one()
                 if counter > 0:
                     bulkRemove.execute()
-            except Exception, e:
-                logging.exception ("cleanup_data failed with: " + e.message)
+            except Exception as errmsg:
+                logging.exception("cleanup_data failed with: " + str(errmsg))
             finally:
                 if counter < 42:
                     break
