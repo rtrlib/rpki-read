@@ -1,23 +1,15 @@
 #!/usr/bin/python
 import argparse
-import calendar
 import gc
 import json
 import logging
-import os
-import re
-import socket
-import string
 import sys
 
 import multiprocessing as mp
 
-from datetime import datetime
-from subprocess import PIPE, Popen
-
 # internal imports
-from mongodb import *
-from settings import *
+from mongodb import output_data, output_latest, output_stat
+from settings import DEFAULT_LOG_LEVEL, DEFAULT_MONGO_DATABASE, DOSTATS_INTERVAL, MAX_COUNTER, QUEUE_LIMIT
 
 def main():
     parser = argparse.ArgumentParser(description='', epilog='')
@@ -39,7 +31,7 @@ def main():
     logging.basicConfig(level=numeric_level,
                         format='%(asctime)s : %(levelname)s : %(message)s')
 
-    queue = mp.Queue()
+    queue = mp.Queue(QUEUE_LIMIT)
     dbconnstr = None
     # BEGIN
     logging.info("START")
@@ -47,7 +39,7 @@ def main():
 
     # thread1: write data to database
     output_data_p = mp.Process(target=output_data,
-                               args=(dbconnstr, queue,args['dropdata']))
+                               args=(dbconnstr, queue, args['dropdata']))
     output_data_p.start()
 
     # thread2: filter latest validation results
@@ -65,22 +57,14 @@ def main():
 
     # main loop, read data from STDIN to be stored in database
     counter = 0
-    if os.path.exists(WAIT_TO_SYNC_FILE):
-        try:
-            logging.info("remove wait_to_sync file")
-            os.remove(WAIT_TO_SYNC_FILE)
-        except Exception as errmsg:
-            logging.exception("remove wait_to_sync file, failed with: " + str(errmsg))
-        # end try
-    # end if
     while True:
         line = sys.stdin.readline().strip()
         if line.strip() == 'STOP':
             break
         # end if
         try:
-            data = json.loads(line)
-        except:
+            data = json.loads(line, strict=False)
+        except ValueError:
             logging.exception("Failed to parse JSON from input.")
         else:
             queue.put(data)

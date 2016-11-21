@@ -1,13 +1,12 @@
 import gc
 import logging
-import os
 import time
 
 from bson.son import SON
 from bson.code import Code
-from datetime import datetime, timedelta
-from pymongo import MongoClient, DESCENDING, ASCENDING
-from settings import BULK_TIMEOUT, BULK_MAX_OPS, QUEUE_LIMIT, WAIT_TO_SYNC_FILE
+from datetime import datetime
+from pymongo import MongoClient
+from settings import BULK_TIMEOUT, BULK_MAX_OPS
 
 logging.basicConfig(level=logging.CRITICAL, format='%(asctime)s : %(levelname)s : %(message)s')
 
@@ -109,19 +108,6 @@ def output_data(dbconnstr, queue, dropdata):
     bulk_len = 0
     begin = datetime.now()
     while True:
-        if (queue.qsize() > QUEUE_LIMIT) and not os.path.exists(WAIT_TO_SYNC_FILE):
-            try:
-                logging.info("create wait_to_sync file")
-                with open(WAIT_TO_SYNC_FILE, 'a'):
-                    os.utime(WAIT_TO_SYNC_FILE, None)
-            except Exception as errmsg:
-                logging.exception("create wait_to_sync file, failed with: " + str(errmsg))
-        elif (queue.qsize() < (QUEUE_LIMIT * 0.5)) and os.path.exists(WAIT_TO_SYNC_FILE):
-            try:
-                logging.info("remove wait_to_sync file")
-                os.remove(WAIT_TO_SYNC_FILE)
-            except Exception as errmsg:
-                logging.exception("remove wait_to_sync file, failed with: " + str(errmsg))
         data = queue.get()
         if data == 'DONE':
             break
@@ -180,12 +166,10 @@ def cleanup_data(dbconnstr):
                     bulkRemove.find({"_id": p['_id']}).remove_one()
                 if counter > 0:
                     bulkRemove.execute()
+                if counter < BULK_MAX_OPS/100:
+                    break
             except Exception as errmsg:
                 logging.exception("cleanup_data failed with: " + str(errmsg))
-            finally:
-                if counter < 42:
-                    break
-                # end if
             # end try
         # end if
     # end while

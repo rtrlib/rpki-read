@@ -1,22 +1,18 @@
 #!/usr/bin/python
 from __future__ import print_function
+
 import argparse
 import json
 import logging
-import os
-import random
-import re
-import socket
-import string
 import sys
 import time
 
-from datetime import datetime, date, timedelta
+from datetime import datetime
 from _pybgpstream import BGPStream, BGPRecord, BGPElem
 
-from settings import *
-from BGPmessage import *
-
+from settings import MAX_COUNTER, DEFAULT_BGPSTREAM_COLLECTOR, DEFAULT_LOG_LEVEL, RIB_TS_INTERVAL, RIB_TS_WAIT
+from BGPmessage import BGPmessage
+output_counter = 0
 # helper functions
 def valid_date(s):
     """
@@ -32,15 +28,18 @@ def output(odata):
     """
     Output parsed BGP messages as JSON to STDOUT
     """
-    if (odata == 'STOP'):
+    global output_counter
+    if odata == 'STOP':
         print(odata)
+    elif odata == 'FLUSH':
+        sys.stdout.flush()
     else:
         print(json.dumps(odata.__dict__))
+        output_counter += 1
     # end if
-    sys.stdout.flush()
-
-def wait_to_sync():
-    while(os.path.exists(WAIT_TO_SYNC_FILE)):
+    if output_counter > MAX_COUNTER:
+        output_counter = 0
+        sys.stdout.flush()
         time.sleep(1)
 
 def recv_bgpstream_rib(begin, until, collector):
@@ -55,11 +54,9 @@ def recv_bgpstream_rib(begin, until, collector):
     stream.add_filter('collector', collector)
     stream.add_filter('record-type','updates')
     stream.add_interval_filter(begin,until)
-
     # Start the stream
     stream.start()
     while (stream.get_next_record(rec)):
-        wait_to_sync()
         if rec.status == 'valid':
             elem = rec.get_next_elem()
         else:
@@ -86,6 +83,7 @@ def recv_bgpstream_rib(begin, until, collector):
             elem = rec.get_next_elem()
         # end while (elem)
     # end while (stream...)
+    output('FLUSH')
 
 def recv_bgpstream_updates(begin, until, collector):
     """
@@ -102,7 +100,6 @@ def recv_bgpstream_updates(begin, until, collector):
     # Start the stream
     stream.start()
     while (stream.get_next_record(rec)):
-        wait_to_sync()
         if rec.status == 'valid':
             elem = rec.get_next_elem()
         else:
@@ -158,7 +155,6 @@ def main():
         raise ValueError('Invalid log level: %s' % loglevel)
     logging.basicConfig(level=numeric_level,
                         format='%(asctime)s : %(levelname)s : %(message)s')
-
     # parse and init timestamps
     dt_begin = args['begin']
     ts_begin = int(time.mktime(dt_begin.timetuple()))
@@ -167,24 +163,18 @@ def main():
         dt_until = args['until']
         ts_until = int(time.mktime(dt_until.timetuple()))
     # start
-    logging.info("START ("+str(ts_begin)+" - "+str(ts_until)+")")
-    if os.path.exists(WAIT_TO_SYNC_FILE):
-        try:
-            logging.info("remove wait_to_sync file")
-            os.remove(WAIT_TO_SYNC_FILE)
-        except Exception as errmsg:
-            logging.exception("remove wait_to_sync file, failed with: " + str(errmsg))
-        # end try
-    # end if
+    logging.info("START (" + str(ts_begin) + " - " + str(ts_until) + ")")
     try:
         # receive last full RIB first
-        recv_bgpstream_rib( (ts_begin - RIB_TS_INTERVAL), ts_begin, args['collector'])
+        recv_bgpstream_rib((ts_begin - RIB_TS_INTERVAL), ts_begin, args['collector'])
+        time.sleep(RIB_TS_WAIT)
         # receive updates
         recv_bgpstream_updates(ts_begin, ts_until, args['collector'])
     except KeyboardInterrupt:
         logging.exception("ABORT")
     finally:
         output("STOP")
+        output("FLUSH")
     logging.info("FINISH")
     # END
 

@@ -8,11 +8,12 @@ import logging
 import markdown
 import sys
 import threading
+import time
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from copy import deepcopy
 from flask import render_template, Markup, request
-from netaddr import IPNetwork, IPAddress
+from netaddr import IPNetwork
 from app import app
 
 import config
@@ -58,7 +59,7 @@ def update_dash_stats():
     try:
         dash_stats = get_dash_stats(config.DATABASE_CONN)
     except Exception as errmsg:
-        logging.exception ("update_dash_stats, error: " + str(errmsg))
+        logging.exception("update_dash_stats, error: " + str(errmsg))
     else:
         if dash_stats != None:
             dash_stats['source'] = config.BGP_SOURCE
@@ -72,9 +73,12 @@ def update_last24h_stats():
     """ update stats over last 24h """
     last24h_stats = None
     try:
-        last24h_stats = get_last24h_stats(config.DATABASE_CONN)
+        lts = g_stats['dash']['latest_ts']
+        if lts == 0:
+            lts = int(time.time())
+        last24h_stats = get_last24h_stats(config.DATABASE_CONN, lts)
     except Exception as errmsg:
-        logging.exception ("update_last24h_stats, error: " + str(errmsg))
+        logging.exception("update_last24h_stats, error: " + str(errmsg))
     return last24h_stats
 
 def update_ipversion_stats():
@@ -168,7 +172,7 @@ def stats():
         if ('num_NotFound' in g_stats['ipv6']) and (g_stats['ipv6']['num_NotFound'] > 0):
             lstats['ipv6'] = '1'
             lstats['ipv6_data'] = deepcopy(g_stats['ipv6'])
-        lstats['latest_ts'] = deepcopy(g_stats['dash']['latest_ts'])
+        lstats['latest_dt'] = deepcopy(g_stats['dash']['latest_dt'])
         lstats['source'] = deepcopy(g_stats['dash']['source'])
         lstats['last24h'] = deepcopy(g_stats['l24h'])
     # end lock

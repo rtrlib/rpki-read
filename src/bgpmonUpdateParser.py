@@ -82,7 +82,7 @@ def parse_bgp_message(xml):
     # add announced prefixes
     prefixes = update.findall('.//{urn:ietf:params:xml:ns:xfb}NLRI')
     for prefix in prefixes:
-        logging.debug("BGP ANNOUNCE %s by AS %s" % (prefix.text, src_peer['asn']))
+        logging.debug("BGP ANNOUNCE " + prefix.text + " by AS" + src_peer['asn'])
         bgp_message.add_announce(prefix.text)
 
     return bgp_message
@@ -91,19 +91,20 @@ def _init_bgpmon_sock(host, port):
     """
     Init bgpmon socket connections
     """
-    logging.debug ("CALL _init_bgpmon_sock")
+    logging.debug("CALL _init_bgpmon_sock")
     bm_sock = None
     ready = False
     timeout = 0
     while not ready:
-        bm_sock =  socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        bm_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             bm_sock.connect((host,port))
         except:
             bm_sock.close()
             backoff = pow(2,(timeout%6)+5)
             timeout += 1
-            logging.critical ("Failed to connect to BGPmon XML RIB or UPDATE stream! Wait "+str(backoff)+"s and try again.")
+            logging.critical("Failed to connect to BGPmon XML RIB or UPDATE stream!")
+            logging.critical("Wait " + str(backoff) + "s and try again.")
             time.sleep(backoff)
         else:
             ready = True

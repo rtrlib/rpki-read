@@ -107,7 +107,8 @@ def get_dash_stats(dbconnstr):
     db = client.get_default_database()
     # init stats results
     stats = dict()
-    stats['latest_ts'] = 'now'
+    stats['latest_dt'] = 'now'
+    stats['latest_ts'] = 0
     stats['num_Valid'] = 0
     stats['num_InvalidAS'] = 0
     stats['num_InvalidLength'] = 0
@@ -123,9 +124,9 @@ def get_dash_stats(dbconnstr):
             for i in range(0, len(results)):
                 stats["num_"+results[i]['_id']] = results[i]['count']
                 stats['num_Total'] += results[i]['count']
-            ts_tmp = db.validity_latest.find_one(projection={'value.timestamp': True, '_id': False},
-                                                 sort=[('value.timestamp', DESCENDING)])['value']['timestamp']
-            stats['latest_ts'] = datetime.fromtimestamp(int(ts_tmp)).strftime('%Y-%m-%d %H:%M:%S')
+            stats['latest_ts'] = db.validity_latest.find_one(projection={'value.timestamp': True, '_id': False},
+                                                             sort=[('value.timestamp', DESCENDING)])['value']['timestamp']
+            stats['latest_dt'] = datetime.fromtimestamp(int(stats['latest_ts'])).strftime('%Y-%m-%d %H:%M:%S')
         except Exception as errmsg:
             logging.exception("get_dash_stats, error: " + str(errmsg))
             stats = None
@@ -133,14 +134,14 @@ def get_dash_stats(dbconnstr):
     # end if
     return stats
 
-def get_last24h_stats(dbconnstr):
+def get_last24h_stats(dbconnstr, latest_ts):
     client = MongoClient(dbconnstr)
     db = client.get_default_database()
 
     last24h = None
     if "validity_stats" in db.collection_names() and db.validity_stats.count() > 0:
         try:
-            ts24 = int(time.time()) - (3600*24) # last 24h
+            ts24 = int(latest_ts) - (3600*24) # last 24h
             last24h = list(db.validity_stats.find({'ts': {'$gt': ts24}},
                                                   {'_id':0}).sort('ts', DESCENDING))
         except Exception as errmsg:
