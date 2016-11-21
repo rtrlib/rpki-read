@@ -171,7 +171,36 @@ def get_validation_list(dbconnstr, state):
     return rlist
 
 def get_validation_origin(dbconnstr, search_string):
-    return None
+    result = None
+    tmp_list = None
+    client = MongoClient(dbconnstr)
+    db = client.get_default_database()
+    if "validity_latest" in db.collection_names() and db.validity_latest.count() > 0:
+        try:
+            pipeline = [
+                {"$match": {'value.validated_route.route.origin_asn': search_string}}
+            ]
+#            tmp_list = db.validity_latest.find({'value.validated_route.route.origin_asn' : search_string},
+#                                           {'_id' : 0, 'value.type' : 0, 'value.timestamp' : 0})
+            tmp_list = list(db.validity_latest.aggregate(pipeline, allowDiskUse=True))
+        except Exception as errmsg:
+            logging.exception("get_validation_origin failed with: " + str(errmsg))
+        else:
+            result = list()
+            for r in tmp_list:
+                data = dict()
+                data['prefix'] = r['value']['validated_route']['route']['prefix']
+                data['origin'] = r['value']['validated_route']['route']['origin_asn']
+                if r['value']['type'] == 'announcement':
+                    data['state'] = r['value']['validated_route']['validity']['state']
+                    data['roas'] = r['value']['validated_route']['validity']['VRPs']
+                else:
+                    data['state'] = 'withdraw'
+                    data['roas'] = None
+                result.append(data)
+        # end try
+    # end if
+    return result
 
 def get_validation_prefix(dbconnstr, search_string):
     prefix = None

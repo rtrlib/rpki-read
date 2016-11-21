@@ -4,6 +4,46 @@
 {% endblock %}
 {% block content %}
     <script src="/static/js/bootstrap-table.js"></script>
+    <script>
+        function formatROAs(value,row,index) {
+            html_dropdown =  '<button class="btn btn-primary" type="button" id="'+index;
+            html_dropdown += '> No ROAs <span class="caret"></span></button>';
+            if (value != null) {
+                num_roas = value.matched.length + value.unmatched_as.length + value.unmatched_length.length;
+                html_dropdown = '<div class="dropdown">';
+                html_dropdown += '<button class="btn btn-primary dropdown-toggle" type="button" id="'+index;
+                html_dropdown += '" data-toggle="dropdown" area-haspopup="true" area-expanded="true">';
+                html_dropdown += 'Show ('+num_roas.toString()+') <span class="caret"></span></button>';
+                html_dropdown += '<ul class="dropdown-menu" style="padding:5px" area-labelledby="'+index+'">';
+                if (value.matched.length > 0) {
+                    html_dropdown += '<li class="dropdown-header">matched</li>';
+                    for (m in value.matched) {
+                        html_dropdown += '<li>';
+                        html_dropdown += '<span>'+value.matched[m].prefix+' - '+value.matched[m].max_length+', '+value.matched[m].asn+'</span>';
+                        html_dropdown += '</li>';
+                    }
+                }
+                if (value.unmatched_length.length > 0) {
+                    html_dropdown += '<li class="dropdown-header">unmatched Length</li>';
+                    for (m in value.unmatched_length) {
+                        html_dropdown += '<li>';
+                        html_dropdown += '<span>'+value.unmatched_length[m].prefix+' - '+value.unmatched_length[m].max_length+', '+value.unmatched_length[m].asn+'</span>';
+                        html_dropdown += '</li>';
+                    }
+                }
+                if (value.unmatched_as.length > 0) {
+                    html_dropdown += '<li class="dropdown-header">unmatched AS</li>';
+                    for (m in value.unmatched_as) {
+                        html_dropdown += '<li>';
+                        html_dropdown += '<span>'+value.unmatched_as[m].prefix+' - '+value.unmatched_as[m].max_length+', '+value.unmatched_as[m].asn+'</span>';
+                        html_dropdown += '</li>';
+                    }
+                }
+                html_dropdown += '</ul></div>';
+            }
+            return html_dropdown;
+        }
+    </script>
     <div class="row">
         <div class="col-xs-12">
             <div class="panel panel-{{config.color|safe}}">
@@ -19,9 +59,10 @@
                         data-toggle="table">
                     <thead>
                         <tr>
-                            <th data-field="timestamp" data-align="left"   data-sortable="true">Timestamp</th>
-                            <th data-field="prefix" data-align="left"   data-sortable="true">Prefix</th>
-                            <th data-field="state" data-align="right"  data-sortable="true">State</th>
+                            <th data-field="prefix" data-align="left"   data-sortable="true">IP Prefix</th>
+                            <th data-field="origin" data-align="right"  data-sortable="true">BGP Origin</th>
+                            <th data-field="state"  data-align="center"  data-sortable="true">Validation</th>
+                            <th data-field="roas"   data-align="center" data-sortable="false" data-formatter="formatROAs">ROAs (#)</th>
                         </tr>
                     </thead>
                 </table>

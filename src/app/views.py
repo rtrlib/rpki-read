@@ -197,8 +197,8 @@ def invalid_len():
 ## search handler
 @app.route('/search', methods=['POST'])
 def search():
-    config_json = {'url' : '/search_json?search='+request.form['prefix'],
-                   'color' : 'default', 'prefix' : request.form['prefix']}
+    config_json = {'url' : '/search_json?search='+request.form['query'],
+                   'color' : 'default', 'query' : request.form['query']}
     return render_template("search.html", config=config_json)
 
 ## table data as json
@@ -216,21 +216,12 @@ def invalid_len_table_json():
 
 @app.route('/search_json', methods=['GET'])
 def search_json():
-    search = request.args.get('search')
-    if _is_prefix(search):
-        validity_now = get_validation_prefix(config.DATABASE_CONN, search)
-    elif _is_asn(search):
-        validity_now = get_validation_origin(config.DATABASE_CONN, search)
+    query = request.args.get('search')
+    if _is_prefix(query):
+        validity_now = get_validation_prefix(config.DATABASE_CONN, query)
+    elif _is_asn(query):
+        validity_now = get_validation_origin(config.DATABASE_CONN, query)
     ret = list()
     if validity_now != None:
         ret.extend(validity_now)
-    # validity_old = get_validation_history(config.DATABASE_CONN, validity_now[0]['prefix'])
-    # cmp = ret[0]
-    # for v in validity_old:
-    #     if v['type'] != cmp['type']:
-    #         ret.append(v)
-    #         cmp = v
-    #     elif (v['type'] == 'announcement') and ( (v['state'] != cmp['state']) or (v['origin'] != cmp['origin']) ):
-    #         ret.append(v)
-    #         cmp = v
     return json.dumps(ret, indent=2, separators=(',', ': '))
