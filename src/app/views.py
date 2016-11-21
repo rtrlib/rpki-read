@@ -1,13 +1,18 @@
+"""
+"""
+import atexit
 import codecs
 import gc
 import json
 import logging
 import markdown
 import sys
-import socket
+import threading
 
 from apscheduler.schedulers.background import BackgroundScheduler
+from copy import deepcopy
 from flask import render_template, Markup, request
+from netaddr import IPNetwork, IPAddress
 from app import app
 
 import config
@@ -17,68 +22,117 @@ else:
     logging.critical("unknown database type!")
     sys.exit(1)
 
-g_dash_stats = dict()
-g_ipv4_stats = dict()
-g_ipv6_stats = dict()
-g_last24h_stats = list()
+g_stats = {'dash': {}, 'l24h': [], 'ipv4': {}, 'ipv6': {}}
 g_stats_counter = config.UPDATE_INTERVAL_FACTOR
+g_lock = threading.Lock()
 
-def update_dash_stats():
-    global g_dash_stats
+#----- helper functions -----#
+def _is_prefix(ipstr):
+    """ check if ipstr is a valid IP prefix"""
     try:
-        dash_stats = get_dash_stats(config.DATABASE_CONN)
-        if dash_stats != None:
-            dash_stats['source'] = config.BGP_SOURCE
-            dash_stats['rel_Valid'] = round( (float(dash_stats['num_Valid'])/float(dash_stats['num_Total']))*100 , 2)
-            dash_stats['rel_InvalidLength'] = round( (float(dash_stats['num_InvalidLength'])/float(dash_stats['num_Total']))*100 , 2)
-            dash_stats['rel_InvalidAS'] = round( (float(dash_stats['num_InvalidAS'])/float(dash_stats['num_Total']))*100 , 2)
-            dash_stats['rel_NotFound'] = round( (float(dash_stats['num_NotFound'])/float(dash_stats['num_Total']))*100 , 2)
-            g_dash_stats = dash_stats
-    except Exception, e:
-        logging.exception ("update_dash_stats, error: " + e.message)
-        print "update_dash_stats, error: " + e.message
+        ipa = IPNetwork(ipstr).ip
+        return len(str(ipa)) > 0
+    except Exception as errmsg:
+        logging.exception("IP address parse failed with: " + str(errmsg))
+        return False
 
-def update_last24h_stats():
-    global g_last24h_stats
-    try:
-        last24h_stats = get_last24h_stats(config.DATABASE_CONN)
-        if last24h_stats != None:
-            g_last24h_stats = last24h_stats
-    except Exception, e:
-        logging.exception ("update_last24h_stats, error: " + e.message)
-        print "update_last24h_stats, error: " + e.message
-    gc.collect()
-
-def update_ipversion_stats():
-    global g_ipv4_stats, g_ipv6_stats
-    try:
-        ipv4_stats, ipv6_stats = get_ipversion_stats(config.DATABASE_CONN)
-        if ipv4_stats != None:
-            g_ipv4_stats = ipv4_stats
-        if ipv6_stats != None:
-            g_ipv6_stats = ipv6_stats
-    except Exception, e:
-        logging.exception ("update_ipversion_stats, error: " + e.message)
-        print "update_ipversion_stats, error: " + e.message
-
-@app.before_first_request
-def initialize():
-    apsched = BackgroundScheduler()
-    update_dash_stats()
-    update_last24h_stats()
-    update_ipversion_stats()
-    apsched.add_job(update_dash_stats, 'interval', seconds=config.UPDATE_INTERVAL_STATS, id="job_dash")
-    apsched.add_job(update_last24h_stats, 'interval', seconds=config.UPDATE_INTERVAL_STATS*config.UPDATE_INTERVAL_FACTOR, id="job_last24h")
-    apsched.add_job(update_ipversion_stats, 'interval', seconds=config.UPDATE_INTERVAL_STATS*config.UPDATE_INTERVAL_FACTOR, id="job_ipversion")
-    apsched.start()
+def _is_asn(asnstr):
+    """ check if asnstr is a valid AS number"""
+    if asnstr.upper().startswith('AS'):
+        return True
+    return False
 
 def _get_table_json(state):
+    """ return state table ass JSON """
     dlist = get_validation_list(config.DATABASE_CONN, state)
     data = dict()
     data['total'] = len(dlist)
     data['state'] = state
     data['rows'] = dlist
     return json.dumps(dlist, indent=2, separators=(',', ': '))
+
+#----- update functions -----#
+def update_dash_stats():
+    """ update dashboard stats"""
+    dash_stats = None
+    try:
+        dash_stats = get_dash_stats(config.DATABASE_CONN)
+    except Exception as errmsg:
+        logging.exception ("update_dash_stats, error: " + str(errmsg))
+    else:
+        if dash_stats != None:
+            dash_stats['source'] = config.BGP_SOURCE
+            dash_stats['rel_Valid'] = round((float(dash_stats['num_Valid'])/float(dash_stats['num_Total']))*100, 2)
+            dash_stats['rel_InvalidLength'] = round((float(dash_stats['num_InvalidLength'])/float(dash_stats['num_Total']))*100, 2)
+            dash_stats['rel_InvalidAS'] = round((float(dash_stats['num_InvalidAS'])/float(dash_stats['num_Total']))*100, 2)
+            dash_stats['rel_NotFound'] = round((float(dash_stats['num_NotFound'])/float(dash_stats['num_Total']))*100, 2)
+    return dash_stats
+
+def update_last24h_stats():
+    """ update stats over last 24h """
+    last24h_stats = None
+    try:
+        last24h_stats = get_last24h_stats(config.DATABASE_CONN)
+    except Exception as errmsg:
+        logging.exception ("update_last24h_stats, error: " + str(errmsg))
+    return last24h_stats
+
+def update_ipversion_stats():
+    """ update ip version specific stats """
+    ipv4_stats = None
+    ipv6_stats = None
+    try:
+        ipv4_stats, ipv6_stats = get_ipversion_stats(config.DATABASE_CONN)
+    except Exception as errmsg:
+        logging.exception("update_ipversion_stats, error: " + str(errmsg))
+    return ipv4_stats, ipv6_stats
+
+def update_stats():
+    """ update all stats """
+    global g_stats, g_stats_counter, g_lock
+    g_stats_counter += 1
+    dash_stats = update_dash_stats()
+    if dash_stats != None:
+        with g_lock:
+            g_stats['dash'] = dash_stats
+    # end if
+    if g_stats_counter > config.UPDATE_INTERVAL_FACTOR:
+        g_stats_counter = 0
+        l24h_stats = update_last24h_stats()
+        ipv4_stats, ipv6_stats = update_ipversion_stats()
+        if l24h_stats != None:
+            with g_lock:
+                g_stats['l24h'] = l24h_stats
+        if ipv4_stats != None:
+            with g_lock:
+                g_stats['ipv4'] = ipv4_stats
+        if ipv6_stats != None:
+            with g_lock:
+                g_stats['ipv6'] = ipv6_stats
+    # end if g_stats_counter
+    gc.collect()
+
+@app.before_first_request
+def initialize():
+    # init logger
+    logger = logging.getLogger("rpki-read")
+    logger.setLevel(logging.INFO)
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.INFO)
+    formatter = logging.Formatter('%(asctime)s : %(levelname)s : %(message)s')
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+    # init update job
+    scheduler = BackgroundScheduler()
+    scheduler.start()
+    update_stats()
+    scheduler.add_job(func=update_stats,
+                      trigger='interval',
+                      seconds=config.UPDATE_INTERVAL_STATS,
+                      id="job_stats",
+                      name="Update stats every UPDATE_INTERVAL_STATS seconds",
+                      replace_existing=True)
+    atexit.register(lambda: scheduler.shutdown())
 
 ## about page handler
 @app.route('/about')
@@ -93,52 +147,55 @@ def about():
 @app.route('/dashboard')
 @app.route('/search', methods=['GET'])
 def dashboard():
-    if g_dash_stats != None:
-        return render_template("dashboard.html", stats=g_dash_stats)
+    global g_lock
+    lstats = {}
+    with g_lock:
+        if g_stats['dash'] != None:
+            lstats = deepcopy(g_stats['dash'])
+    # end lock
+    return render_template("dashboard.html", stats=lstats)
 
 ## stats handler
 @app.route('/stats')
 def stats():
-    stats=dict()
-    try:
+    global g_lock
+    lstats = dict()
+    with g_lock:
         # ipv4 origin stats
-        if ('num_NotFound' in g_ipv4_stats) and (g_ipv4_stats['num_NotFound'] > 0):
-        #if ('num_NotFound' in g_ipv4_stats):
-            stats['ipv4'] = '1'
-            stats['ipv4_data'] = g_ipv4_stats
-        if ('num_NotFound' in g_ipv6_stats) and (g_ipv6_stats['num_NotFound'] > 0):
-        #if ('num_NotFound' in g_ipv6_stats):
-            stats['ipv6'] = '1'
-            stats['ipv6_data'] = g_ipv6_stats
-        stats['latest_ts'] = g_dash_stats['latest_ts']
-        stats['source'] = g_dash_stats['source']
-        stats['last24h'] = g_last24h_stats
-        return render_template("stats.html", stats=stats)
-    except Exception, e:
-        logging.exception ("stats with: " + e.message)
-        print "stats: error " + e.message
+        if ('num_NotFound' in g_stats['ipv4']) and (g_stats['ipv4']['num_NotFound'] > 0):
+            lstats['ipv4'] = '1'
+            lstats['ipv4_data'] = deepcopy(g_stats['ipv4'])
+        if ('num_NotFound' in g_stats['ipv6']) and (g_stats['ipv6']['num_NotFound'] > 0):
+            lstats['ipv6'] = '1'
+            lstats['ipv6_data'] = deepcopy(g_stats['ipv6'])
+        lstats['latest_ts'] = deepcopy(g_stats['dash']['latest_ts'])
+        lstats['source'] = deepcopy(g_stats['dash']['source'])
+        lstats['last24h'] = deepcopy(g_stats['l24h'])
+    # end lock
+    return render_template("stats.html", stats=lstats)
 
 ## table handler
 @app.route('/valid')
 def valid():
-    config = {'url' : '/valid_json', 'color' : 'success', 'state' : 'Valid'}
-    return render_template("table.html", config=config)
+    config_json = {'url' : '/valid_json', 'color' : 'success', 'state' : 'Valid'}
+    return render_template("table.html", config=config_json)
 
 @app.route('/invalid_as')
 def invalid_as():
-    config = {'url' : '/invalid_as_json', 'color' : 'danger', 'state' : 'InvalidAS'}
-    return render_template("table.html", config=config)
+    config_json = {'url' : '/invalid_as_json', 'color' : 'danger', 'state' : 'InvalidAS'}
+    return render_template("table.html", config=config_json)
 
 @app.route('/invalid_len')
 def invalid_len():
-    config = {'url' : '/invalid_len_json', 'color' : 'warning', 'state' : 'InvalidLength'}
-    return render_template("table.html", config=config)
+    config_json = {'url' : '/invalid_len_json', 'color' : 'warning', 'state' : 'InvalidLength'}
+    return render_template("table.html", config=config_json)
 
 ## search handler
 @app.route('/search', methods=['POST'])
 def search():
-    config = {'url' : '/search_json?search='+request.form['prefix'], 'color' : 'default', 'prefix' : request.form['prefix']}
-    return render_template("search.html", config=config)
+    config_json = {'url' : '/search_json?search='+request.form['prefix'],
+                   'color' : 'default', 'prefix' : request.form['prefix']}
+    return render_template("search.html", config=config_json)
 
 ## table data as json
 @app.route('/valid_json')
@@ -156,7 +213,10 @@ def invalid_len_table_json():
 @app.route('/search_json', methods=['GET'])
 def search_json():
     search = request.args.get('search')
-    validity_now = get_validation_prefix(config.DATABASE_CONN, search)
+    if _is_prefix(search):
+        validity_now = get_validation_prefix(config.DATABASE_CONN, search)
+    elif _is_asn(search):
+        validity_now = get_validation_origin(config.DATABASE_CONN, search)
     ret = list()
     if validity_now != None:
         ret.extend(validity_now)
