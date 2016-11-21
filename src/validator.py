@@ -2,6 +2,7 @@
 from __future__ import print_function
 
 import argparse
+import gc
 import json
 import logging
 import sys
@@ -122,19 +123,28 @@ def output(queue, format_json):
     Output validation result as one line JSON, pretty JSON formatting is optional
     """
     logging.info ("start output")
+    output_counter = 0
     while True:
         odata = queue.get()
-        if (odata == 'STOP'):
+        if odata == 'STOP':
+            print(odata)
+            sys.stdout.flush()
             break
         try:
             if format_json:
-                print(json.dumps(odata, sort_keys=True,
-                                 indent=2, separators=(',', ': ')))
+                print(json.dumps(odata, sort_keys=True, indent=2, separators=(',', ': ')))
+                output_counter += 1
             else:
                 print(json.dumps(odata))
+                output_counter += 1
+            # end if
             sys.stdout.flush()
         except Exception as errmsg:
-            logging.exception ("output thread failed with: " + str(errmsg))
+            logging.exception("output, failed with: " + str(errmsg))
+        # end try
+        if output_counter > MAX_COUNTER:
+            output_counter = 0
+            gc.collect()
     return True
 
 def main():

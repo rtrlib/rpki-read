@@ -2,6 +2,7 @@
 from __future__ import print_function
 
 import argparse
+import gc
 import json
 import logging
 import sys
@@ -13,6 +14,7 @@ from _pybgpstream import BGPStream, BGPRecord, BGPElem
 from settings import MAX_COUNTER, DEFAULT_BGPSTREAM_COLLECTOR, DEFAULT_LOG_LEVEL, RIB_TS_INTERVAL, RIB_TS_WAIT, WAIT_TO_SYNC
 from BGPmessage import BGPmessage
 output_counter = 0
+
 # helper functions
 def valid_date(s):
     """
@@ -40,6 +42,7 @@ def output(odata):
     if output_counter > MAX_COUNTER:
         output_counter = 0
         sys.stdout.flush()
+        gc.collect()
         time.sleep(WAIT_TO_SYNC)
 
 def recv_bgpstream_rib(begin, until, collector):

@@ -31,7 +31,7 @@ def main():
     logging.basicConfig(level=numeric_level,
                         format='%(asctime)s : %(levelname)s : %(message)s')
 
-    queue = mp.Queue(QUEUE_LIMIT)
+    queue = mp.Queue()
     dbconnstr = None
     # BEGIN
     logging.info("START")
