@@ -1,5 +1,5 @@
 #!/usr/bin/python
-
+from __future__ import print_function
 import argparse
 import json
 import logging
@@ -33,9 +33,9 @@ def output(odata):
     Output parsed BGP messages as JSON to STDOUT
     """
     if (odata == 'STOP'):
-        print odata
+        print(odata)
     else:
-        print json.dumps(odata.__dict__)
+        print(json.dumps(odata.__dict__))
     # end if
     sys.stdout.flush()
 
@@ -172,8 +172,8 @@ def main():
         try:
             logging.info("remove wait_to_sync file")
             os.remove(WAIT_TO_SYNC_FILE)
-        except Exception, e:
-            logging.exception ("remove wait_to_sync file, failed with: %s" , e.message)
+        except Exception as errmsg:
+            logging.exception("remove wait_to_sync file, failed with: " + str(errmsg))
         # end try
     # end if
     try:
@@ -182,7 +182,7 @@ def main():
         # receive updates
         recv_bgpstream_updates(ts_begin, ts_until, args['collector'])
     except KeyboardInterrupt:
-        logging.exception ("ABORT")
+        logging.exception("ABORT")
     finally:
         output("STOP")
     logging.info("FINISH")

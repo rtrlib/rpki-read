@@ -1,27 +1,19 @@
 #!/usr/bin/python
+from __future__ import print_function
 
 import argparse
-import calendar
 import json
 import logging
-import os
-import random
 import re
 import socket
-import string
 import sys
 import time
-import xml
-
 
 import multiprocessing as mp
 import xml.etree.ElementTree as ET
 
-from datetime import datetime
-from xml.dom import minidom
-
-from settings import *
-from BGPmessage import *
+from settings import DEFAULT_LOG_LEVEL, DEFAULT_BGPMON_SERVER
+from BGPmessage import BGPmessage
 
 def parse_bgp_message(xml):
     """
@@ -30,17 +22,17 @@ def parse_bgp_message(xml):
     logging.info("CALL parse_bgp_message")
     try:
         tree = ET.fromstring(xml)
-    except:
-        logging.exception ("Cannot parse XML: " + xml)
+    except ET.ParseError:
+        logging.exception("Cannot parse XML: " + xml)
         return None
-    logging.debug ("root: %s" % tree.tag)
+    logging.debug("root: " + str(tree.tag))
     for child in tree:
         logging.debug (child.tag)
 
     # check if source exists, otherwise return
     src = tree.find('{urn:ietf:params:xml:ns:bgp_monitor}SOURCE')
     if src is None:
-        logging.warning ("Invalid XML, no source!")
+        logging.warning("Invalid XML, no source!")
         return None
     src_peer = dict()
     src_peer['addr'] = src.find('{urn:ietf:params:xml:ns:bgp_monitor}ADDRESS').text
@@ -50,20 +42,20 @@ def parse_bgp_message(xml):
     # get timestamp
     dt = tree.find('{urn:ietf:params:xml:ns:bgp_monitor}OBSERVED_TIME')
     if dt is None:
-        logging.warning ("Invalid XML, no source!")
+        logging.warning("Invalid XML, no source!")
         return None
     ts = dt.find('{urn:ietf:params:xml:ns:bgp_monitor}TIMESTAMP').text
 
     # check wether it is a keep alive message
     keep_alive = tree.find('{urn:ietf:params:xml:ns:xfb}KEEP_ALIVE')
     if keep_alive is not None:
-        logging.debug ("BGP KEEP ALIVE %s (AS %s)" % (src_peer['addr'], src_peer['asn']))
+        logging.debug("BGP KEEP ALIVE " + src_peer['addr'] + " (AS " + src_peer['asn'] + ")")
         return None
 
     # proceed with bgp update parsing
     update = tree.find('{urn:ietf:params:xml:ns:xfb}UPDATE')
     if update is None:
-        logging.warning ("Invalid XML, no update!")
+        logging.warning("Invalid XML, no update!")
         return None
 
     # init return struct
@@ -73,7 +65,7 @@ def parse_bgp_message(xml):
     # add withdrawn prefixes
     withdraws = update.findall('.//{urn:ietf:params:xml:ns:xfb}WITHDRAW')
     for withdraw in withdraws:
-        logging.debug ("BGP WITHDRAW %s by AS %s" % (withdraw.text,src_peer['asn']))
+        logging.debug("BGP WITHDRAW " + withdraw.text + " (AS" + src_peer['asn'] + ")")
         bgp_message.add_withdraw(withdraw.text)
 
     # add AS path
@@ -90,7 +82,7 @@ def parse_bgp_message(xml):
     # add announced prefixes
     prefixes = update.findall('.//{urn:ietf:params:xml:ns:xfb}NLRI')
     for prefix in prefixes:
-        logging.debug ("BGP ANNOUNCE %s by AS %s" % (prefix.text,src_peer['asn']))
+        logging.debug("BGP ANNOUNCE %s by AS %s" % (prefix.text, src_peer['asn']))
         bgp_message.add_announce(prefix.text)
 
     return bgp_message
@@ -139,7 +131,7 @@ def recv_bgpmon_rib(host, port, queue):
             continue
 
         stream += data
-        stream = string.replace(stream, "<xml>", "")
+        stream = str.replace(stream, "<xml>", "")
         while (re.search('</BGP_MONITOR_MESSAGE>', stream)):
             messages = stream.split('</BGP_MONITOR_MESSAGE>')
             msg = messages[0] + '</BGP_MONITOR_MESSAGE>'
@@ -180,7 +172,7 @@ def recv_bgpmon_updates(host, port, queue):
             sock = _init_bgpmon_sock(host,port)
             continue
         stream += data
-        stream = string.replace(stream, "<xml>", "")
+        stream = str.replace(stream, "<xml>", "")
         while (re.search('</BGP_MONITOR_MESSAGE>', stream)):
             messages = stream.split('</BGP_MONITOR_MESSAGE>')
             msg = messages[0] + '</BGP_MONITOR_MESSAGE>'
@@ -196,13 +188,13 @@ def output(queue):
     """
     logging.info ("CALL output")
     run = True
-    while run == True:
+    while run is True:
         odata = queue.get()
         if (odata == 'STOP'):
-            print odata
+            print(odata)
             run = False
         else:
-            print json.dumps(odata.__dict__)
+            print(json.dumps(odata.__dict__))
         # end if
         sys.stdout.flush()
     # end while
@@ -229,7 +221,7 @@ def main():
 
     numeric_level = getattr(logging, args['loglevel'].upper(), None)
     if not isinstance(numeric_level, int):
-        raise ValueError('Invalid log level: %s' % loglevel)
+        raise ValueError('Invalid log level: %s' % args['loglevel'])
     logging.basicConfig(level=numeric_level,
                         format='%(asctime)s : %(levelname)s : %(message)s')
 
