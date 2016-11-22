@@ -9,7 +9,7 @@ import multiprocessing as mp
 
 # internal imports
 from mongodb import output_data, output_latest, output_stat
-from settings import DEFAULT_LOG_LEVEL, DEFAULT_MONGO_DATABASE, DOSTATS_INTERVAL, MAX_COUNTER
+from settings import DEFAULT_LOG_LEVEL, DEFAULT_MONGO_DATABASE, DOSTATS_INTERVAL
 
 def main():
     parser = argparse.ArgumentParser(description='', epilog='')
@@ -31,7 +31,7 @@ def main():
     logging.basicConfig(level=numeric_level,
                         format='%(asctime)s : %(levelname)s : %(message)s')
 
-    queue = mp.Queue()
+    pipe_recv, pipe_send = mp.Pipe(False)
     dbconnstr = None
     # BEGIN
     logging.info("START")
@@ -39,7 +39,7 @@ def main():
 
     # thread1: write data to database
     output_data_p = mp.Process(target=output_data,
-                               args=(dbconnstr, queue, args['dropdata']))
+                               args=(dbconnstr, pipe_recv, args['dropdata']))
     output_data_p.start()
 
     # thread2: filter latest validation results
@@ -56,7 +56,6 @@ def main():
     output_stat_p.start()
 
     # main loop, read data from STDIN to be stored in database
-    counter = 0
     while True:
         line = sys.stdin.readline().strip()
         if line.strip() == 'STOP':
@@ -67,14 +66,8 @@ def main():
         except ValueError:
             logging.exception("Failed to parse JSON from input.")
         else:
-            queue.put(data)
+            pipe_send.send(data)
         # end try
-        counter += 1
-        if counter > MAX_COUNTER:
-            logging.info("output queue size: " + str(queue.qsize()))
-            counter = 0
-            gc.collect()
-        # end if
     # end while
 
 if __name__ == "__main__":

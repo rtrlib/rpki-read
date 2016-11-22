@@ -78,7 +78,7 @@ def _get_validity(validation_result_string):
     # END (if elif else)
     return validity
 
-def validator(in_queue, out_queue, cache_host, cache_port):
+def validator(ipipe, opipe, cache_host, cache_port):
     """
     The validation thread, this is where the work is done.
     """
@@ -89,7 +89,7 @@ def validator(in_queue, out_queue, cache_host, cache_port):
     logging.info("run validator thread (" + cache_host + ":" + cache_port + ")")
     run = True
     while run:
-        validation_entry = in_queue.get(True)
+        validation_entry = ipipe.recv()
         if validation_entry == "STOP":
             run = False
             break
@@ -108,24 +108,24 @@ def validator(in_queue, out_queue, cache_host, cache_port):
         return_data['route']['origin_asn'] = "AS"+asn
         return_data['route']['prefix'] = validation_entry[0]
         return_data['validity'] = validity
-        out_queue.put({"type":"announcement",
-                       "prefix": validation_entry[0],
-                       "source": validation_entry[2],       # source
-                       "timestamp": validation_entry[3],    # timestamp
-                       "next_hop": validation_entry[4],     # next_hop
-                       "validated_route": return_data})
+        opipe.send({
+            "type":"announcement",
+            "prefix": validation_entry[0],
+            "timestamp": validation_entry[2],
+            "validated_route": return_data
+        })
     # end while
     validator_process.kill()
     return True
 
-def output(queue, format_json):
+def output(pipe, format_json):
     """
     Output validation result as one line JSON, pretty JSON formatting is optional
     """
     logging.info("start output")
     output_counter = 0
     while True:
-        odata = queue.get()
+        odata = pipe.recv()
         if odata == 'STOP':
             print(odata)
             sys.stdout.flush()
@@ -178,15 +178,15 @@ def main():
     # BEGIN
     logging.info("START")
     # init queues
-    input_queue = mp.Queue()
-    output_queue = mp.Queue()
+    ipipe_recv, ipipe_send = mp.Pipe(False)
+    opipe_recv, opipe_send = mp.Pipe(False)
     # start validator thread
     val_thread = mp.Process(target=validator,
-                            args=(input_queue, output_queue, addr, str(port)))
+                            args=(ipipe_recv, opipe_send, addr, str(port)))
     val_thread.start()
     # start output thread
     out_thread = mp.Process(target=output,
-                            args=(output_queue, args['json']))
+                            args=(opipe_recv, args['json']))
     out_thread.start()
     # main loop, reading from STDIN
     while True:
@@ -202,9 +202,11 @@ def main():
             if data['type'] == 'update':
                 withdraws = data['withdraw']
                 for wdraw in withdraws:
-                    output_queue.put({"type": "withdraw", "prefix": wdraw,
-                                      "source": data['source'],
-                                      "timestamp": data['timestamp']})
+                    ipipe_send.send({
+                        "type": "withdraw",
+                        "prefix": wdraw,
+                        "timestamp": data['timestamp']
+                    })
                 path = data['aspath']
                 if len(path) < 1:
                     continue
@@ -212,16 +214,14 @@ def main():
                 prefixes = data['announce']
                 for pre in prefixes:
                     logging.debug(pre + " : " + origin)
-                    input_queue.put(
-                        (pre, origin, data['source'], data['timestamp'], data['next_hop'])
-                    )
+                    ipipe_send.send((pre, origin, data['timestamp']))
                 # end for
             # end if type
         # end try
     # end while
     # we should not get here, but just in case we stop everything gracefully
-    input_queue.put("STOP")
-    output_queue.put("STOP")
+    ipipe_send.send("STOP")
+    opipe_send.send("STOP")
     out_thread.join()
     val_thread.join()
     logging.info("FINISH")

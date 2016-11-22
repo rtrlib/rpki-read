@@ -69,14 +69,14 @@ def recv_bgpstream_rib(begin, until, collector):
         while (elem):
             if (elem.type.upper() == 'A') or (elem.type.upper() == 'R'):
                 bgp_message = BGPmessage(elem.time, 'update')
-                bgp_message.set_nexthop(elem.fields['next-hop'])
-                src_peer = dict()
-                src_addr = elem.peer_address
-                src_asn = elem.peer_asn
-                src_peer['addr'] = src_addr
-                src_peer['port'] = 0
-                src_peer['asn'] = src_asn
-                bgp_message.set_source(src_peer)
+                #bgp_message.set_nexthop(elem.fields['next-hop'])
+                #src_peer = dict()
+                #src_addr = elem.peer_address
+                #src_asn = elem.peer_asn
+                #src_peer['addr'] = src_addr
+                #src_peer['port'] = 0
+                #src_peer['asn'] = src_asn
+                #bgp_message.set_source(src_peer)
                 aspath = elem.fields['as-path'].split()
                 for a in aspath:
                     if not '{' in a: # ignore AS-SETs

@@ -23,49 +23,50 @@ def parse_bgp_message(xml):
     try:
         tree = ET.fromstring(xml)
     except ET.ParseError:
-        logging.exception("Cannot parse XML: " + xml)
+        logging.exception(" !! Cannot parse XML: " + xml)
         return None
-    logging.debug("root: " + str(tree.tag))
+    logging.debug(" -- XML root tag: " + str(tree.tag))
     for child in tree:
         logging.debug (child.tag)
 
     # check if source exists, otherwise return
     src = tree.find('{urn:ietf:params:xml:ns:bgp_monitor}SOURCE')
     if src is None:
-        logging.warning("Invalid XML, no source!")
+        logging.warning(" !! Invalid XML, no source found !!")
         return None
-    src_peer = dict()
-    src_peer['addr'] = src.find('{urn:ietf:params:xml:ns:bgp_monitor}ADDRESS').text
-    src_peer['port'] = src.find('{urn:ietf:params:xml:ns:bgp_monitor}PORT').text
-    src_peer['asn'] = src.find('{urn:ietf:params:xml:ns:bgp_monitor}ASN2').text
+    #src_peer = dict()
+    #src_peer['addr'] = src.find('{urn:ietf:params:xml:ns:bgp_monitor}ADDRESS').text
+    #src_peer['port'] = src.find('{urn:ietf:params:xml:ns:bgp_monitor}PORT').text
+    #src_peer['asn'] = src.find('{urn:ietf:params:xml:ns:bgp_monitor}ASN2').text
 
     # get timestamp
     dt = tree.find('{urn:ietf:params:xml:ns:bgp_monitor}OBSERVED_TIME')
     if dt is None:
-        logging.warning("Invalid XML, no source!")
+        logging.warning(" !! Invalid XML, no timestamp found !!")
         return None
     ts = dt.find('{urn:ietf:params:xml:ns:bgp_monitor}TIMESTAMP').text
 
     # check wether it is a keep alive message
     keep_alive = tree.find('{urn:ietf:params:xml:ns:xfb}KEEP_ALIVE')
     if keep_alive is not None:
-        logging.debug("BGP KEEP ALIVE " + src_peer['addr'] + " (AS " + src_peer['asn'] + ")")
+        #logging.debug("BGP KEEP ALIVE " + src_peer['addr'] + " (AS " + src_peer['asn'] + ")")
+        logging.debug(" -- got BGP keep alive message")
         return None
 
     # proceed with bgp update parsing
     update = tree.find('{urn:ietf:params:xml:ns:xfb}UPDATE')
     if update is None:
-        logging.warning("Invalid XML, no update!")
+        logging.warning(" !! Invalid XML, no BGP update message !!")
         return None
 
     # init return struct
     bgp_message = BGPmessage(ts,'update')
-    bgp_message.set_source(src_peer)
+    #bgp_message.set_source(src_peer)
 
     # add withdrawn prefixes
     withdraws = update.findall('.//{urn:ietf:params:xml:ns:xfb}WITHDRAW')
     for withdraw in withdraws:
-        logging.debug("BGP WITHDRAW " + withdraw.text + " (AS" + src_peer['asn'] + ")")
+        logging.debug(" -- add BGP withdraw " + withdraw.text)
         bgp_message.add_withdraw(withdraw.text)
 
     # add AS path
@@ -76,13 +77,13 @@ def parse_bgp_message(xml):
 
     # add next hop
     next_hop = update.find('{urn:ietf:params:xml:ns:xfb}NEXT_HOP')
-    if next_hop is not None:
-        bgp_message.set_nexthop(next_hop.text)
+    #if next_hop is not None:
+    #    bgp_message.set_nexthop(next_hop.text)
 
     # add announced prefixes
     prefixes = update.findall('.//{urn:ietf:params:xml:ns:xfb}NLRI')
     for prefix in prefixes:
-        logging.debug("BGP ANNOUNCE " + prefix.text + " by AS" + src_peer['asn'])
+        logging.debug(" -- add BGP announce " + prefix.text)
         bgp_message.add_announce(prefix.text)
 
     return bgp_message
@@ -122,7 +123,7 @@ def recv_bgpmon_rib(host, port, queue):
     # receive data
     run = True
     parse = False
-    logging.info("receiving XML RIB stream ...")
+    logging.info(" + receiving XML RIB stream ...")
     while(run):
         data = sock.recv(1024)
         if not data:
@@ -164,7 +165,7 @@ def recv_bgpmon_updates(host, port, queue):
     data = ""
     stream = ""
     # receive data
-    logging.info("receiving XML update stream ...")
+    logging.info(" + receiving XML update stream ...")
     while(True):
         data = sock.recv(1024)
         if not data:

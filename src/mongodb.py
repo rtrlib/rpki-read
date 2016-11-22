@@ -98,7 +98,7 @@ def output_stat(dbconnstr, interval):
         time.sleep(interval)
     # end while
 
-def output_data(dbconnstr, queue, dropdata):
+def output_data(dbconnstr, pipe, dropdata):
     """Store validation results into database"""
     logging.debug("CALL output_data mongodb, with " + dbconnstr)
     client = MongoClient(dbconnstr)
@@ -112,7 +112,7 @@ def output_data(dbconnstr, queue, dropdata):
     bulk_len = 0
     begin = datetime.now()
     while True:
-        data = queue.get()
+        data = pipe.recv()
         if data == 'DONE':
             break
         if (data['type'] == 'announcement') or (data['type'] == 'withdraw'):
