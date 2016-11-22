@@ -2,18 +2,19 @@
 """
 import atexit
 import codecs
+from copy import deepcopy
 import gc
 import json
 import logging
-import markdown
 import sys
 import threading
 import time
 
-from apscheduler.schedulers.background import BackgroundScheduler
-from copy import deepcopy
-from flask import render_template, Markup, request
+import markdown
 from netaddr import IPNetwork
+from apscheduler.schedulers.background import BackgroundScheduler
+from flask import render_template, Markup, request
+
 from app import app
 
 import config
@@ -63,10 +64,14 @@ def update_dash_stats():
     else:
         if dash_stats != None:
             dash_stats['source'] = config.BGP_SOURCE
-            dash_stats['rel_Valid'] = round((float(dash_stats['num_Valid'])/float(dash_stats['num_Total']))*100, 2)
-            dash_stats['rel_InvalidLength'] = round((float(dash_stats['num_InvalidLength'])/float(dash_stats['num_Total']))*100, 2)
-            dash_stats['rel_InvalidAS'] = round((float(dash_stats['num_InvalidAS'])/float(dash_stats['num_Total']))*100, 2)
-            dash_stats['rel_NotFound'] = round((float(dash_stats['num_NotFound'])/float(dash_stats['num_Total']))*100, 2)
+            dash_stats['rel_Valid'] = round(
+                (float(dash_stats['num_Valid'])/float(dash_stats['num_Total']))*100, 2)
+            dash_stats['rel_InvalidLength'] = round(
+                (float(dash_stats['num_InvalidLength'])/float(dash_stats['num_Total']))*100, 2)
+            dash_stats['rel_InvalidAS'] = round(
+                (float(dash_stats['num_InvalidAS'])/float(dash_stats['num_Total']))*100, 2)
+            dash_stats['rel_NotFound'] = round(
+                (float(dash_stats['num_NotFound'])/float(dash_stats['num_Total']))*100, 2)
     return dash_stats
 
 def update_last24h_stats():
@@ -121,11 +126,11 @@ def initialize():
     # init logger
     logger = logging.getLogger("rpki-read")
     logger.setLevel(logging.INFO)
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.INFO)
+    logstream = logging.StreamHandler()
+    logstream.setLevel(logging.INFO)
     formatter = logging.Formatter('%(asctime)s : %(levelname)s : %(message)s')
-    ch.setFormatter(formatter)
-    logger.addHandler(ch)
+    logstream.setFormatter(formatter)
+    logger.addHandler(logstream)
     # init update job
     scheduler = BackgroundScheduler()
     scheduler.start()

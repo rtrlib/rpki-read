@@ -3,11 +3,18 @@ BASE_PATH = "."
 VALIDATOR_PATH = BASE_PATH + "/util/cli-validator"
 
 VALIDITY_STATE = ['Valid', 'NotFound', 'Invalid', 'InvalidAS', 'InvalidLength']
-VALIDITY_DESCR = ["At least one VRP Matches the Route Prefix",
-                  "No VRP Covers the Route Prefix",
-                  "At least one VRP Matches the Route Prefix, but no VRP ASN or the Route Prefix length is greater than the maximum length allowed by VRP(s) matching this route origin ASN",
-                  "At least one VRP Covers the Route Prefix, but no VRP ASN mastches the route origin ASN",
-                  "At least one VRP Covers the Route Prefix, but the Route Prefix length is greater than the maximum length allowed by VRP(s) matching this route origin ASN"]
+VALIDITY_DESCR = [
+    "At least one VRP Matches the Route Prefix",
+    "No VRP Covers the Route Prefix",
+    "At least one VRP Matches the Route Prefix, "
+    + "but no VRP ASN or the Route Prefix length is greater than "
+    + "the maximum length allowed by VRP(s) matching this route origin ASN",
+    "At least one VRP Covers the Route Prefix, "
+    + "but no VRP ASN mastches the route origin ASN",
+    "At least one VRP Covers the Route Prefix, "
+    + "but the Route Prefix length is greater than the maximum "
+    + "length allowed by VRP(s) matching this route origin ASN"
+]
 
 # connections
 DEFAULT_CACHE_SERVER = {"host": "rpki-validator.realmv6.org", "port": 8282}

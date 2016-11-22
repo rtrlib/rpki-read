@@ -48,8 +48,8 @@ def _get_validity(validation_result_string):
         if validity['code'] != 1:
             reasons_array = reasons.split(',')
             vprefix, vlength, vasn = query.split()
-            for r in reasons_array:
-                rasn, rprefix, rmin_len, rmax_len = r.split()
+            for reason in reasons_array:
+                rasn, rprefix, rmin_len, rmax_len = reason.split()
                 vrp = dict()
                 vrp['asn'] = "AS"+rasn
                 vrp['prefix'] = rprefix+"/"+rmin_len
@@ -82,7 +82,7 @@ def validator(in_queue, out_queue, cache_host, cache_port):
     """
     The validation thread, this is where the work is done.
     """
-    logging.info ("start validator thread")
+    logging.info("start validator thread")
     # start RPKI validation client process
     cache_cmd = [VALIDATOR_PATH, cache_host, cache_port]
     validator_process = Popen(cache_cmd, stdin=PIPE, stdout=PIPE)
@@ -93,8 +93,8 @@ def validator(in_queue, out_queue, cache_host, cache_port):
         if validation_entry == "STOP":
             run = False
             break
-        network, masklen    = validation_entry[0].split('/')
-        asn                 = validation_entry[1]
+        network, masklen = validation_entry[0].split('/')
+        asn = validation_entry[1]
         bgp_entry_str = str(network) + " " + str(masklen) + " " + str(asn)
         if validator_process.poll() is not None:
             validator_process = Popen(cache_cmd, stdin=PIPE, stdout=PIPE)
@@ -122,7 +122,7 @@ def output(queue, format_json):
     """
     Output validation result as one line JSON, pretty JSON formatting is optional
     """
-    logging.info ("start output")
+    logging.info("start output")
     output_counter = 0
     while True:
         odata = queue.get()
@@ -176,18 +176,18 @@ def main():
     port = args['port']
 
     # BEGIN
-    logging.info ("START")
+    logging.info("START")
     # init queues
     input_queue = mp.Queue()
     output_queue = mp.Queue()
     # start validator thread
-    vt = mp.Process(target=validator,
-                    args=(input_queue,output_queue,addr,str(port)))
-    vt.start()
+    val_thread = mp.Process(target=validator,
+                            args=(input_queue, output_queue, addr, str(port)))
+    val_thread.start()
     # start output thread
-    ot = mp.Process(target=output,
-                    args=(output_queue,args['json']))
-    ot.start()
+    out_thread = mp.Process(target=output,
+                            args=(output_queue, args['json']))
+    out_thread.start()
     # main loop, reading from STDIN
     while True:
         line = sys.stdin.readline().strip()
@@ -201,18 +201,20 @@ def main():
         else:
             if data['type'] == 'update':
                 withdraws = data['withdraw']
-                for w in withdraws:
-                    output_queue.put({"type":"withdraw", "prefix":w,
-                                      "source":data['source'],
-                                      "timestamp":data['timestamp']})
+                for wdraw in withdraws:
+                    output_queue.put({"type": "withdraw", "prefix": wdraw,
+                                      "source": data['source'],
+                                      "timestamp": data['timestamp']})
                 path = data['aspath']
                 if len(path) < 1:
                     continue
                 origin = path[-1]
                 prefixes = data['announce']
-                for p in prefixes:
-                    logging.debug(p + " : " + origin)
-                    input_queue.put((p, origin, data['source'], data['timestamp'], data['next_hop']))
+                for pre in prefixes:
+                    logging.debug(pre + " : " + origin)
+                    input_queue.put(
+                        (pre, origin, data['source'], data['timestamp'], data['next_hop'])
+                    )
                 # end for
             # end if type
         # end try
@@ -220,6 +222,8 @@ def main():
     # we should not get here, but just in case we stop everything gracefully
     input_queue.put("STOP")
     output_queue.put("STOP")
+    out_thread.join()
+    val_thread.join()
     logging.info("FINISH")
 
 if __name__ == "__main__":

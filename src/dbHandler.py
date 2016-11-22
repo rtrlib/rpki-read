@@ -9,7 +9,7 @@ import multiprocessing as mp
 
 # internal imports
 from mongodb import output_data, output_latest, output_stat
-from settings import DEFAULT_LOG_LEVEL, DEFAULT_MONGO_DATABASE, DOSTATS_INTERVAL, MAX_COUNTER, QUEUE_LIMIT
+from settings import DEFAULT_LOG_LEVEL, DEFAULT_MONGO_DATABASE, DOSTATS_INTERVAL, MAX_COUNTER
 
 def main():
     parser = argparse.ArgumentParser(description='', epilog='')
