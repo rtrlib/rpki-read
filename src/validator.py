@@ -126,7 +126,6 @@ def output(pipe, format_json):
     Output validation result as one line JSON, pretty JSON formatting is optional
     """
     logging.info("start output")
-    output_counter = 0
     while True:
         odata = pipe.recv()
         if odata == 'STOP':
@@ -136,18 +135,13 @@ def output(pipe, format_json):
         try:
             if format_json:
                 print(json.dumps(odata, sort_keys=True, indent=2, separators=(',', ': ')))
-                output_counter += 1
             else:
                 print(json.dumps(odata))
-                output_counter += 1
             # end if
             sys.stdout.flush()
         except Exception as errmsg:
             logging.exception("output, failed with: " + str(errmsg))
         # end try
-        if output_counter > MAX_COUNTER:
-            output_counter = 0
-            gc.collect()
     return True
 
 def main():

@@ -11,7 +11,7 @@ import time
 from datetime import datetime
 from _pybgpstream import BGPStream, BGPRecord, BGPElem
 
-from settings import MAX_COUNTER, DEFAULT_BGPSTREAM_COLLECTOR, DEFAULT_LOG_LEVEL, RIB_TS_INTERVAL, RIB_TS_WAIT, WAIT_TO_SYNC
+from settings import MAX_COUNTER, DEFAULT_BGPSTREAM_COLLECTOR, DEFAULT_LOG_LEVEL, RIB_TS_INTERVAL
 from BGPmessage import BGPmessage
 output_counter = 0
 
@@ -43,7 +43,6 @@ def output(odata):
         output_counter = 0
         sys.stdout.flush()
         gc.collect()
-        time.sleep(WAIT_TO_SYNC)
 
 def recv_bgpstream_rib(begin, until, collector):
     """
@@ -154,7 +153,6 @@ def main():
     try:
         # receive last full RIB first
         recv_bgpstream_rib((ts_begin - RIB_TS_INTERVAL), ts_begin, args['collector'])
-        time.sleep(RIB_TS_WAIT)
         # receive updates
         recv_bgpstream_updates(ts_begin, ts_until, args['collector'])
     except KeyboardInterrupt:
