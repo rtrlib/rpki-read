@@ -142,7 +142,7 @@
                     <div class="panel-heading">
                         <h1>RPKI READ Statistics</h1>
                         <h4>
-                            <span class="pull-left">Timestamp: <span class="label label-primary">{{ stats.latest_dt }}</span></span>
+                            <span class="pull-left">UTC Timestamp: <span class="label label-primary">{{ stats.latest_dt }}</span></span>
                             <span class="pull-right">BGP Source: <span class="label label-primary">{{ stats.source }}</span></span>
                         </h4>
                         </br>
@@ -209,10 +209,19 @@
                         <div class="row">
                             <div id="info_ipv4" class="col-xs-12 alert alert-info collapse" role="alert">
                                 <p class="text-justify">
-                                    The graphs below show the RPKI validation results for all currently advertised IPv4 prefixes.
-                                    They show relative validition states over number of advertised prefixes and how much of the advertised IPv4 address space is covered by the RPKI.
-                                    <i>Note</i> that a distinct IP prefix can have multiple origin AS, and is thus counted several times.
-                                    However, for address space coverage each prefix is counted only once, with preference on validation results in the following order: <i>Valid</i>, <i>Invalid Length</i>, <i>Invalid AS</i>, <i>Not Found</i>.
+                                    The graphs below show the RPKI validation results for all currently
+                                    advertised IPv4 prefixes.
+                                    They show relative validition states over number of prefixes and how much
+                                    of the advertised IPv4 address space is covered by the RPKI.
+                                    Please note that a distinct IP prefix can have multiple origins, and is
+                                    counted several times.
+                                    However, for address space coverage each prefix is counted only once, with
+                                    preference on validation results in the following order:
+                                    <i>Valid</i>, <i>Invalid Length</i>, <i>Invalid AS</i>, <i>Not Found</i>.
+                                </p>
+                                <p>
+                                    <i>Note:</i> If several values cannot be visualized separately in a graph
+                                    they are summarized into <i>other</i>, e.g. <i>Invalid Length</i> and <i>Invalid AS</i>.
                                 </p>
                             </div>
                         </div>
@@ -238,19 +247,28 @@
                     <div class="panel-heading">
                         <h2>
                             RPKI Validation Results for IPv6
-                            <button type="button" class="btn btn-info pull-right" data-toggle="collapse" data-target="#info_ipv4">
+                            <button type="button" class="btn btn-info pull-right" data-toggle="collapse" data-target="#info_ipv6">
                                 <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
                             </button>
                         </h2>
                     </div>
                     <div class="panel-body">
                         <div class="row">
-                            <div id="info_ipv4" class="col-xs-12 alert alert-info collapse" role="alert">
+                            <div id="info_ipv6" class="col-xs-12 alert alert-info collapse" role="alert">
                                 <p class="text-justify">
-                                    The graphs below show the RPKI validation results for all currently advertised IPv6 prefixes.
-                                    They show relative validition states over number of prefixes and how much of the advertised IPv6 address space is covered by the RPKI.
-                                    <i>Note</i> that a distinct IP prefix can have multiple origins, and is counted several times.
-                                    However, for address space coverage each prefix is counted only once, with preference on validation results in the following order: <i>Valid</i>, <i>Invalid Length</i>, <i>Invalid AS</i>, <i>Not Found</i>.
+                                    The graphs below show the RPKI validation results for all currently
+                                    advertised IPv6 prefixes.
+                                    They show relative validition states over number of prefixes and how much
+                                    of the advertised IPv6 address space is covered by the RPKI.
+                                    Please note that a distinct IP prefix can have multiple origins, and is
+                                    counted several times.
+                                    However, for address space coverage each prefix is counted only once, with
+                                    preference on validation results in the following order:
+                                    <i>Valid</i>, <i>Invalid Length</i>, <i>Invalid AS</i>, <i>Not Found</i>.
+                                </p>
+                                <p>
+                                    <i>Note:</i> If several values cannot be visualized separately in a graph
+                                    they are summarized into <i>other</i>, e.g. <i>Invalid Length</i> and <i>Invalid AS</i>.
                                 </p>
                             </div>
                         </div>

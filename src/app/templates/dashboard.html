@@ -63,7 +63,7 @@
                     <div class="panel-heading">
                         <h1>RPKI Realtime Dashboard</h1>
                         <h4>
-                            <span class="pull-left">Timestamp: <span class="label label-primary">{{ stats.latest_dt }}</span></span>
+                            <span class="pull-left">UTC Timestamp: <span class="label label-primary">{{ stats.latest_dt }}</span></span>
                             <span class="pull-right">BGP Source: <span class="label label-primary">{{ stats.source }}</span></span>
                         </h4>
                         </br>
@@ -109,8 +109,12 @@
                                 <p class="text-justify">
                                     The table and graphs below show the absolute and relative RPKI origin validation results for all currently visible prefixes.
                                     A verifiable prefix has at least one Route Origin Authorization (ROA) for that prefix and its origin AS in the RPKI.
-                                    <i>Note</i> that the number of prefix to origin AS relations can exceed the number of distinct IP prefixes advertised in the BGP.
+                                    Note that the number of prefix to origin AS relations can exceed the number of distinct IP prefixes advertised in the BGP.
                                     This also known as <i>Multiple Origin AS</i> (MOAS), where a certain IP prefix is announced by two or more AS, i.e., has several origins.
+                                </p>
+                                <p>
+                                    <i>Note:</i> If several values cannot be visualized separately in a graph
+                                    they are summarized into <i>other</i>, e.g. <i>Invalid Length</i> and <i>Invalid AS</i>.
                                 </p>
                             </div>
                         </div>
