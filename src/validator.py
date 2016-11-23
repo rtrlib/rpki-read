@@ -93,6 +93,9 @@ def validator(ipipe, opipe, cache_host, cache_port):
         if validation_entry == "STOP":
             run = False
             break
+        if len(validation_entry) < 3:
+            logging.error(" !! validator: failed to parse query !!")
+            continue
         network, masklen = validation_entry[0].split('/')
         asn = validation_entry[1]
         bgp_entry_str = str(network) + " " + str(masklen) + " " + str(asn)
@@ -109,7 +112,7 @@ def validator(ipipe, opipe, cache_host, cache_port):
         return_data['route']['prefix'] = validation_entry[0]
         return_data['validity'] = validity
         opipe.send({
-            "type":"announcement",
+            "type": "announcement",
             "prefix": validation_entry[0],
             "timestamp": validation_entry[2],
             "validated_route": return_data
@@ -202,7 +205,7 @@ def main():
             if data['type'] == 'update':
                 withdraws = data['withdraw']
                 for wdraw in withdraws:
-                    ipipe_send.send({
+                    opipe_send.send({
                         "type": "withdraw",
                         "prefix": wdraw,
                         "timestamp": data['timestamp']
