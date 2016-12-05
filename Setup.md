@@ -32,8 +32,8 @@ On other Linux Distros search for equivalents in their package-management.
 
 The RPKI READ backend consists of 3 components:
 
-1. the [parser](src/bgpmonUpdateParser.py), to extract prefix origins from a XML BGP update stream
-2. the [validator](src/validator.py), to validate prefix origins against an RPKI cache
+1. the [parser](src/bgpmonUpdateParser.py), to extract prefixes-to-origin relations from a XML BGP update stream
+2. the [validator](src/validator.py), to validate prefix to origin AS relations against an RPKI cache
 3. the [database](src/dbHandler.py), to store latest validation results
 
 Each of these components is implemented as a standalone python tool, i.e., they

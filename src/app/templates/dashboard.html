@@ -61,9 +61,9 @@
             <div class="col-xs-12">
                 <div class="panel panel-default">
                     <div class="panel-heading">
-                        <h1>RPKI realtime dashboard</h1>
+                        <h1>RPKI Realtime Dashboard</h1>
                         <h4>
-                            <span class="pull-left">Timestamp: <span class="label label-primary">{{ stats.latest_ts }}</span></span>
+                            <span class="pull-left">UTC Timestamp: <span class="label label-primary">{{ stats.latest_dt }}</span></span>
                             <span class="pull-right">BGP Source: <span class="label label-primary">{{ stats.source }}</span></span>
                         </h4>
                         </br>
@@ -79,14 +79,14 @@
                             <div class="progress-bar progress-bar-danger" style="width: {{ stats.rel_InvalidAS }}%">
                                 <span class="sr-only">Invalid AS</span>
                             </div>
-                            <div class="text-center">{{stats.rel_Valid + stats.rel_InvalidLength + stats.rel_InvalidAS}}% prefix origins are verifiable by the RPKI</div>
+                            <div class="text-center">{{stats.rel_Valid + stats.rel_InvalidLength + stats.rel_InvalidAS}}% prefixes are verifiable by the RPKI</div>
                         </div>
                         <p class="text-primary text-justify lead">
-                            This page provides a realtime overview on the latest prefix origin validation results using the RPKI.
-                            It covers all IP prefix advertised by the given BGP source and up to the most current timestamp.
-                            The progess bar above shows the current state and coverage of the RPKI origin validation, i.e., how many prefix origins are verifiable by a ROA.
+                            This page provides a realtime overview of the latest validation results for prefix to origin AS relations using the RPKI.
+                            It covers all IP prefixes advertised by the given BGP source and up to the most current timestamp.
+                            The progess bar above shows the current state and coverage of the RPKI origin validation, i.e., how many prefixes are verifiable by a ROA.
                             For more and detailed statistics have look at our <a href="/stats">stats</a> page.
-                            To look up the RPKI origin validation result of a certain IP prefix use the search box in the menu bar.
+                            To look up the RPKI origin validation result of a certain IP prefix or autonomous system (AS) use the search box in the menu bar.
                         </p>
                     </div>
                 </div>
@@ -97,7 +97,7 @@
                 <div class="panel panel-default">
                     <div class="panel-heading">
                         <h2>
-                            Latest RPKI validation results
+                            Latest RPKI Validation Results
                             <button type="button" class="btn btn-info pull-right" data-toggle="collapse" data-target="#info">
                                 <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
                             </button>
@@ -107,10 +107,14 @@
                         <div class="row">
                             <div id="info" class="col-xs-12 alert alert-info collapse" role="alert">
                                 <p class="text-justify">
-                                    The table and graphs below show the absolute and relative RPKI origin validation results for all currently visible prefix origins.
-                                    A verifiable prefix origin has at least one Route Origin Authorization (ROA) for that prefix in the RPKI.
-                                    <i>Note</i> that the number of prefix to origin AS relations is likely higher than the number of distinct IP prefixes advertised in the BGP.
-                                    Because, a certain IP prefix might be announced by multiple ASes, thus it has several origins.
+                                    The table and graphs below show the absolute and relative RPKI origin validation results for all currently visible prefixes.
+                                    A verifiable prefix has at least one Route Origin Authorization (ROA) for that prefix and its origin AS in the RPKI.
+                                    Note that the number of prefix to origin AS relations can exceed the number of distinct IP prefixes advertised in the BGP.
+                                    This also known as <i>Multiple Origin AS</i> (MOAS), where a certain IP prefix is announced by two or more AS, i.e., has several origins.
+                                </p>
+                                <p>
+                                    <i>Note:</i> If several values cannot be visualized separately in a graph
+                                    they are summarized into <i>other</i>, e.g. <i>Invalid Length</i> and <i>Invalid AS</i>.
                                 </p>
                             </div>
                         </div>
@@ -141,11 +145,11 @@
                                 </ul>
                             </div> <!-- div panel body col left -->
                             <div class="col-md-4 col-xs-12">
-                                <h4>Advertised prefix origins</h4>
+                                <h4>Advertised Prefixes</h4>
                                 <div id="dChartAll" style="height: 280px"></div>
                             </div> <!-- div panel body col middle -->
                             <div class="col-md-4 col-xs-12">
-                                <h4>RPKI verifiable origins</h4>
+                                <h4>Advertised Prefixes with ROA</h4>
                                 <div id="dChartROA" style="height: 280px"></div>
                             </div> <!-- div panel body col right -->
                         </div> <!-- div row-eq-height -->

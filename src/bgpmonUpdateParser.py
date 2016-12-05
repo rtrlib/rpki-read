@@ -1,77 +1,72 @@
 #!/usr/bin/python
+from __future__ import print_function
 
 import argparse
-import calendar
 import json
 import logging
-import os
-import random
 import re
 import socket
-import string
 import sys
 import time
-import xml
-
 
 import multiprocessing as mp
 import xml.etree.ElementTree as ET
 
-from datetime import datetime
-from xml.dom import minidom
-
-from settings import *
-from BGPmessage import *
+from settings import DEFAULT_LOG_LEVEL, DEFAULT_BGPMON_SERVER
+from BGPmessage import BGPmessage
 
 def parse_bgp_message(xml):
-    """Returns a dict of a parsed BGP XML update message"""
+    """
+    Returns a dict of a parsed BGP XML update message
+    """
     logging.info("CALL parse_bgp_message")
     try:
         tree = ET.fromstring(xml)
-    except:
-        logging.exception ("Cannot parse XML: " + xml)
+    except ET.ParseError:
+        logging.exception(" !! Cannot parse XML: " + xml)
         return None
-    logging.debug ("root: %s" % tree.tag)
+    logging.debug(" -- XML root tag: " + str(tree.tag))
     for child in tree:
         logging.debug (child.tag)
 
     # check if source exists, otherwise return
     src = tree.find('{urn:ietf:params:xml:ns:bgp_monitor}SOURCE')
     if src is None:
-        logging.warning ("Invalid XML, no source!")
+        logging.warning(" !! Invalid XML, no source found !!")
         return None
-    src_peer = dict()
-    src_peer['addr'] = src.find('{urn:ietf:params:xml:ns:bgp_monitor}ADDRESS').text
-    src_peer['port'] = src.find('{urn:ietf:params:xml:ns:bgp_monitor}PORT').text
-    src_peer['asn'] = src.find('{urn:ietf:params:xml:ns:bgp_monitor}ASN2').text
+    #src_peer = dict()
+    #src_peer['addr'] = src.find('{urn:ietf:params:xml:ns:bgp_monitor}ADDRESS').text
+    #src_peer['port'] = src.find('{urn:ietf:params:xml:ns:bgp_monitor}PORT').text
+    #src_peer['asn'] = src.find('{urn:ietf:params:xml:ns:bgp_monitor}ASN2').text
 
     # get timestamp
     dt = tree.find('{urn:ietf:params:xml:ns:bgp_monitor}OBSERVED_TIME')
     if dt is None:
-        logging.warning ("Invalid XML, no source!")
+        logging.warning(" !! Invalid XML, no timestamp found !!")
         return None
     ts = dt.find('{urn:ietf:params:xml:ns:bgp_monitor}TIMESTAMP').text
 
     # check wether it is a keep alive message
     keep_alive = tree.find('{urn:ietf:params:xml:ns:xfb}KEEP_ALIVE')
     if keep_alive is not None:
-        logging.debug ("BGP KEEP ALIVE %s (AS %s)" % (src_peer['addr'], src_peer['asn']))
+        #logging.debug("BGP KEEP ALIVE " + src_peer['addr'] + " (AS " + src_peer['asn'] + ")")
+        logging.debug(" -- got BGP keep alive message")
         return None
 
     # proceed with bgp update parsing
     update = tree.find('{urn:ietf:params:xml:ns:xfb}UPDATE')
     if update is None:
-        logging.warning ("Invalid XML, no update!")
+        logging.warning(" !! Invalid XML, no BGP update message !!")
         return None
 
     # init return struct
     bgp_message = BGPmessage(ts,'update')
-    bgp_message.set_source(src_peer)
+    #bgp_message.set_source(src_peer)
 
     # add withdrawn prefixes
     withdraws = update.findall('.//{urn:ietf:params:xml:ns:xfb}WITHDRAW')
     for withdraw in withdraws:
-        logging.debug ("BGP WITHDRAW %s by AS %s" % (withdraw.text,src_peer['asn']))
+        logging.debug(" -- add BGP withdraw " + withdraw.text)
         bgp_message.add_withdraw(withdraw.text)
 
     # add AS path
@@ -82,38 +77,44 @@ def parse_bgp_message(xml):
 
     # add next hop
     next_hop = update.find('{urn:ietf:params:xml:ns:xfb}NEXT_HOP')
-    if next_hop is not None:
-        bgp_message.set_nexthop(next_hop.text)
+    #if next_hop is not None:
+    #    bgp_message.set_nexthop(next_hop.text)
 
     # add announced prefixes
     prefixes = update.findall('.//{urn:ietf:params:xml:ns:xfb}NLRI')
     for prefix in prefixes:
-        logging.debug ("BGP ANNOUNCE %s by AS %s" % (prefix.text,src_peer['asn']))
+        logging.debug(" -- add BGP announce " + prefix.text)
         bgp_message.add_announce(prefix.text)
 
     return bgp_message
 
 def _init_bgpmon_sock(host, port):
-    logging.debug ("CALL _init_bgpmon_sock")
+    """
+    Init bgpmon socket connections
+    """
+    logging.debug("CALL _init_bgpmon_sock")
     bm_sock = None
     ready = False
     timeout = 0
     while not ready:
-        bm_sock =  socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        bm_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             bm_sock.connect((host,port))
         except:
             bm_sock.close()
             backoff = pow(2,(timeout%6)+5)
             timeout += 1
-            logging.critical ("Failed to connect to BGPmon XML RIB or UPDATE stream! Wait "+str(backoff)+"s and try again.")
+            logging.critical("Failed to connect to BGPmon XML RIB or UPDATE stream!")
+            logging.critical("Wait " + str(backoff) + "s and try again.")
             time.sleep(backoff)
         else:
             ready = True
     return bm_sock
 
 def recv_bgpmon_rib(host, port, queue):
-    """Read the RIB XML stream of bgpmon"""
+    """
+    Receive and parse the BGP RIB XML stream of bgpmon
+    """
     logging.info ("CALL recv_bgpmon_rib (%s:%d)", host, port)
     # open connection
     sock = _init_bgpmon_sock(host,port)
@@ -122,7 +123,7 @@ def recv_bgpmon_rib(host, port, queue):
     # receive data
     run = True
     parse = False
-    logging.info("receiving XML RIB stream ...")
+    logging.info(" + receiving XML RIB stream ...")
     while(run):
         data = sock.recv(1024)
         if not data:
@@ -132,7 +133,7 @@ def recv_bgpmon_rib(host, port, queue):
             continue
 
         stream += data
-        stream = string.replace(stream, "<xml>", "")
+        stream = str.replace(stream, "<xml>", "")
         while (re.search('</BGP_MONITOR_MESSAGE>', stream)):
             messages = stream.split('</BGP_MONITOR_MESSAGE>')
             msg = messages[0] + '</BGP_MONITOR_MESSAGE>'
@@ -155,14 +156,16 @@ def recv_bgpmon_rib(host, port, queue):
     return True
 
 def recv_bgpmon_updates(host, port, queue):
-    """Read the BGP update XML stream of bgpmon"""
+    """
+    Receive and parse the BGP update XML stream of bgpmon
+    """
     logging.info ("CALL recv_bgpmon_updates (%s:%d)", host, port)
     # open connection
     sock = _init_bgpmon_sock(host,port)
     data = ""
     stream = ""
     # receive data
-    logging.info("receiving XML update stream ...")
+    logging.info(" + receiving XML update stream ...")
     while(True):
         data = sock.recv(1024)
         if not data:
@@ -171,7 +174,7 @@ def recv_bgpmon_updates(host, port, queue):
             sock = _init_bgpmon_sock(host,port)
             continue
         stream += data
-        stream = string.replace(stream, "<xml>", "")
+        stream = str.replace(stream, "<xml>", "")
         while (re.search('</BGP_MONITOR_MESSAGE>', stream)):
             messages = stream.split('</BGP_MONITOR_MESSAGE>')
             msg = messages[0] + '</BGP_MONITOR_MESSAGE>'
@@ -182,19 +185,27 @@ def recv_bgpmon_updates(host, port, queue):
     return True
 
 def output(queue):
-    """Output parsed BGP messages as JSON to STDOUT"""
+    """
+    Output parsed BGP messages as JSON to STDOUT
+    """
     logging.info ("CALL output")
-    while True:
+    run = True
+    while run is True:
         odata = queue.get()
         if (odata == 'STOP'):
-            break
-        json_str = json.dumps(odata.__dict__)
-        print json_str
+            print(odata)
+            run = False
+        else:
+            print(json.dumps(odata.__dict__))
+        # end if
         sys.stdout.flush()
+    # end while
     return True
 
 def main():
-    """The main loop"""
+    """
+    The main loop, parsing arguments and start input and output threads
+    """
     parser = argparse.ArgumentParser(description='', epilog='')
     parser.add_argument('-l', '--loglevel',
                         help='Set loglevel [DEBUG,INFO,WARNING,ERROR,CRITICAL].',
@@ -212,7 +223,7 @@ def main():
 
     numeric_level = getattr(logging, args['loglevel'].upper(), None)
     if not isinstance(numeric_level, int):
-        raise ValueError('Invalid log level: %s' % loglevel)
+        raise ValueError('Invalid log level: %s' % args['loglevel'])
     logging.basicConfig(level=numeric_level,
                         format='%(asctime)s : %(levelname)s : %(message)s')
 
